@@ -20,7 +20,11 @@ finance
 
 ### Maintainer notes
 
-Ticker-first market scanner with six editable starter profiles, five chart ranges, explicit consent before the first network request, one shared poller, and bounded stale-data caching. The bundled Python helper uses only the standard library and contacts Yahoo Finance's fixed unofficial chart endpoint. The local deterministic baseline is expected to report `review-required` for QML process execution; there are no blocking findings. The current root preview uses fictional fixture data and will be replaced with a live Omarchy capture before owner approval and submission.
+Omarchy Markets is a macOS Stocks-style market glance for the Omarchy bar. It combines a scrolling ticker with a compact scanner, editable Crypto, Meme Coins and Magnificent Seven profiles, custom watchlists, pinning and five historical ranges.
+
+Yahoo Finance access is consent-gated before the first network request and requires no API key. One shared bounded poller invokes the bundled standard-library Python helper against Yahoo Finance's fixed unofficial chart endpoint, with a private local last-known cache for stale and offline states.
+
+The plugin has no accounts, trading, order execution, portfolio management or investment recommendations, and makes no real-time-data claim. The deterministic security baseline is expected to require manual review because `Service.qml` launches the bounded quote-fetching process; it reports zero findings. The root preview is the repository's clearly identified fictional fixture capture.
 
 ### Submission checklist
 
