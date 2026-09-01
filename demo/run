@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+fixture="$root/demo/fixtures/quotes.json"
+
+python3 -m json.tool "$fixture" >/dev/null
+for range in 1d 5d 1mo 6mo 1y; do
+  symbols=ACME,NORTH,LUMA
+  if [[ "$range" != 1d ]]; then
+    symbols=ACME
+  fi
+  python3 "$root/scripts/fetch_quotes.py" \
+    --timeout 1 \
+    --symbols "$symbols" \
+    --range "$range" \
+    --fixture "$fixture" \
+    | python3 -m json.tool >/dev/null
+done
+printf 'Deterministic market fixture and five ranges are valid: %s\n' "$fixture"
+printf 'Build a reversible live-shell harness before claiming screenshot evidence.\n'

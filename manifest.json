@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.tcballard.omarchy-markets",
+  "name": "Omarchy Markets",
+  "version": "0.3.0",
+  "author": "Tom Ballard",
+  "license": "MIT",
+  "description": "A ticker-first, macOS Stocks-inspired market scanner for the Omarchy bar.",
+  "kinds": [
+    "service",
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "service": "Service.qml",
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Omarchy Markets",
+    "description": "Choose a market profile, scan quotes, and inspect price history from the Omarchy bar.",
+    "category": "Finance",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "dataEnabled": false,
+      "profile": "",
+      "symbols": "",
+      "primarySymbol": "",
+      "selectedRange": "1d",
+      "barMode": "ticker",
+      "refreshIntervalSec": 900,
+      "showPrice": true,
+      "tickerWidth": 220,
+      "tickerSpeed": 24,
+      "tickerPaused": false
+    },
+    "schema": [
+      {
+        "key": "dataEnabled",
+        "type": "boolean",
+        "label": "Allow market data requests",
+        "defaultValue": false,
+        "description": "Market data stays off until you choose a profile or enable a custom watchlist."
+      },
+      {
+        "key": "profile",
+        "type": "string",
+        "label": "Profile",
+        "defaultValue": "",
+        "description": "Profiles are editable watchlist starting points."
+      },
+      {
+        "key": "symbols",
+        "type": "string",
+        "label": "Watchlist symbols (comma-separated)",
+        "defaultValue": ""
+      },
+      {
+        "key": "primarySymbol",
+        "type": "string",
+        "label": "Primary bar symbol",
+        "defaultValue": ""
+      },
+      {
+        "key": "selectedRange",
+        "type": "enum",
+        "label": "Chart range",
+        "options": ["1d", "5d", "1mo", "6mo", "1y"],
+        "defaultValue": "1d"
+      },
+      {
+        "key": "barMode",
+        "type": "enum",
+        "label": "Bar mode",
+        "options": ["single", "ticker"],
+        "defaultValue": "ticker"
+      },
+      {
+        "key": "refreshIntervalSec",
+        "type": "integer",
+        "label": "Refresh interval (seconds)",
+        "min": 300,
+        "max": 3600,
+        "step": 300,
+        "defaultValue": 900
+      },
+      {
+        "key": "showPrice",
+        "type": "boolean",
+        "label": "Show price in the bar",
+        "defaultValue": true
+      },
+      {
+        "key": "tickerWidth",
+        "type": "integer",
+        "label": "Ticker width",
+        "min": 160,
+        "max": 640,
+        "step": 20,
+        "defaultValue": 220
+      },
+      {
+        "key": "tickerSpeed",
+        "type": "integer",
+        "label": "Ticker speed",
+        "min": 0,
+        "max": 80,
+        "step": 4,
+        "defaultValue": 24
+      },
+      {
+        "key": "tickerPaused",
+        "type": "boolean",
+        "label": "Pause ticker",
+        "defaultValue": false
+      }
+    ]
+  }
+}
