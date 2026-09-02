@@ -132,7 +132,10 @@ class QmlSourceContractTests(unittest.TestCase):
 
     def test_service_uses_direct_argv_and_bounds_requests(self) -> None:
         source = (ROOT / "Service.qml").read_text(encoding="utf-8")
-        self.assertIn('"/usr/bin/env", "python3", helperPath', source)
+        self.assertIn('readonly property string pythonInterpreterPath: "/usr/bin/python3"', source)
+        self.assertEqual(source.count("var command = helperCommand(["), 2)
+        self.assertNotIn('"/usr/bin/env", "python3"', source)
+        self.assertNotIn('Quickshell.env("PATH")', source)
         self.assertNotRegex(source, r'["\'](?:ba)?sh["\']\s*,\s*["\']-c')
         self.assertIn("requestWatchdog", source)
         helper = (ROOT / "scripts" / "fetch_quotes.py").read_text(encoding="utf-8")
