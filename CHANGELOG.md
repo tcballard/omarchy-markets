@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1 - 2026-09-02
+
+- Pin quote and history workers to the trusted `/usr/bin/python3` interpreter
+  instead of resolving `python3` through the inherited desktop-shell `PATH`.
+- Fail closed when the trusted interpreter or absolute bundled helper path is
+  unavailable, and add hostile-PATH regression coverage for both worker paths.
+
 ## 0.3.0 - 2026-09-01
 
 - Make the bounded scrolling ticker the default horizontal bar experience.

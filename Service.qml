@@ -76,6 +76,7 @@ Item {
     ? String(manifest.__sourceDir) : ""
   readonly property string helperPath: sourceDirectory !== ""
     ? sourceDirectory + "/scripts/fetch_quotes.py" : ""
+  readonly property string pythonInterpreterPath: "/usr/bin/python3"
   readonly property bool firstParty: manifest && (manifest.__isFirstParty === true
     || String(manifest.id || "") === "omarchy.markets")
   readonly property bool currentlyInBar: safeInBar()
@@ -111,6 +112,12 @@ Item {
     if (cacheDirectoryPath === "" || normalized.length === 0) return ""
     var range = ServiceLifecycle.normalizeHistoryRange(rangeValue, "1d")
     return cacheDirectoryPath + "/history/" + normalized[0] + "-" + range + "-v1.json"
+  }
+
+  function helperCommand(argumentsValue) {
+    if (pythonInterpreterPath !== "/usr/bin/python3" ||
+        helperPath.charAt(0) !== "/") return []
+    return [pythonInterpreterPath, helperPath].concat(argumentsValue || [])
   }
 
   function safeInBar() {
@@ -266,15 +273,19 @@ Item {
     lastError = ""
     if (!hasData) state = "loading"
 
-    var process = fetchProcessComponent.createObject(root, {
-      generationToken: _activeGeneration,
-      command: [
-      "/usr/bin/env", "python3", helperPath,
+    var command = helperCommand([
       "--timeout", "8",
       "--symbols", symbolsKey,
       "--range", "1d",
       "--cache-file", quoteCacheFilePath
-      ]
+    ])
+    if (command.length === 0) {
+      failRequest("The trusted Python 3 interpreter is unavailable", "dependency-missing")
+      return false
+    }
+    var process = fetchProcessComponent.createObject(root, {
+      generationToken: _activeGeneration,
+      command: command
     })
     if (!process) {
       failRequest("The market data helper could not be created", "failed")
@@ -548,7 +559,8 @@ Item {
       failRequest("Market data request timed out", "offline")
       return
     }
-    if (exitCode === 127 || (stderrValue.indexOf("python3") !== -1 && stderrValue.indexOf("No such") !== -1)) {
+    if (exitCode === 127 ||
+        (stderrValue.indexOf("/usr/bin/python3") !== -1 && stderrValue.indexOf("No such") !== -1)) {
       failRequest("Python 3 is required to fetch market data", "dependency-missing")
       return
     }
@@ -758,16 +770,20 @@ Item {
     _historyCompletion = ServiceLifecycle.beginCompletion(generation)
     _historyRequestActive = true
     _historyTimedOut = false
+    var command = helperCommand([
+      "--timeout", "8",
+      "--symbols", historySymbol,
+      "--range", historyRange,
+      "--cache-file", cachePath
+    ])
+    if (command.length === 0) {
+      failHistoryRequest("The trusted Python 3 interpreter is unavailable", "dependency-missing")
+      return false
+    }
     var process = historyProcessComponent.createObject(root, {
       generationToken: generation,
       requestKey: String(keyValue),
-      command: [
-        "/usr/bin/env", "python3", helperPath,
-        "--timeout", "8",
-        "--symbols", historySymbol,
-        "--range", historyRange,
-        "--cache-file", cachePath
-      ]
+      command: command
     })
     if (!process) {
       failHistoryRequest("The market history helper could not be created", "failed")
@@ -941,7 +957,7 @@ Item {
       return
     }
     if (exitCode === 127 ||
-        (stderrValue.indexOf("python3") !== -1 && stderrValue.indexOf("No such") !== -1)) {
+        (stderrValue.indexOf("/usr/bin/python3") !== -1 && stderrValue.indexOf("No such") !== -1)) {
       failHistoryRequest("Python 3 is required to fetch market history", "dependency-missing")
       return
     }

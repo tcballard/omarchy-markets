@@ -96,6 +96,17 @@ test("Service quote and history polling use separate fixed XDG cache files", () 
   assert.match(service, /ServiceLifecycle\.failureBackoffInterval\(/);
 });
 
+test("quote and history workers ignore hostile PATH interpreter shadows", () => {
+  const service = fs.readFileSync(path.join(__dirname, "..", "Service.qml"), "utf8");
+  assert.match(service, /readonly property string pythonInterpreterPath: "\/usr\/bin\/python3"/);
+  assert.match(service, /function helperCommand\(argumentsValue\)/);
+  assert.match(service, /pythonInterpreterPath !== "\/usr\/bin\/python3"/);
+  assert.equal((service.match(/var command = helperCommand\(\[/g) || []).length, 2,
+    "both quote and history workers must use the trusted command builder");
+  assert.doesNotMatch(service, /"\/usr\/bin\/env"\s*,\s*"python3"/);
+  assert.doesNotMatch(service, /Quickshell\.env\("PATH"\)/);
+});
+
 test("Service history is independently generated, watched, cached, and last-request-wins", () => {
   const service = fs.readFileSync(path.join(__dirname, "..", "Service.qml"), "utf8");
   assert.match(service, /function requestHistory\(symbolValue, rangeValue\)/);

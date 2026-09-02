@@ -28,8 +28,9 @@
 - First-party lifecycle: a future bundled service must poll only while its
   widget is present in the bar. Removal cancels requests and timers even though
   Omarchy keeps first-party services loadable.
-- External command: `/usr/bin/env python3` runs the bundled standard-library
-  helper with argument arrays. There is no shell interpolation, package
+- External command: the trusted system interpreter `/usr/bin/python3` runs the
+  bundled standard-library helper with argument arrays. The inherited `PATH`
+  is never used for interpreter resolution. There is no shell interpolation, package
   manager, install hook, daemon, credential access, telemetry, or privilege.
 - Provider boundary: the helper is the sole Yahoo adapter. It emits a bounded,
   versioned quote/history envelope and caps symbols, names, points, files,

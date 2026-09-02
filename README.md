@@ -176,7 +176,7 @@ and the [yfinance project notice](https://github.com/ranaroussi/yfinance#legal-s
 ## Requirements and trust boundary
 
 - Omarchy 4 with Quattro shell-plugin support.
-- Python 3.10 or newer on `PATH`; only the standard library is used.
+- Python 3.10 or newer at `/usr/bin/python3`; only the standard library is used.
 - Network access to `query1.finance.yahoo.com` after explicit setup.
 
 Omarchy plugins execute as unsandboxed user code inside the long-running shell.
