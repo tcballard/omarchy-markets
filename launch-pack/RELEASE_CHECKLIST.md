@@ -2,7 +2,7 @@
 
 | Gate | Requirement | Evidence or observation | Result | Owner | Next action |
 | --- | --- | --- | --- | --- | --- |
-| Release identity | Version and candidate commit agree | Manifest 0.3.1; exact commit recorded at handoff | Pass | Tom Ballard | Preserve identity through public push. |
+| Release identity | Version and candidate commit agree | Manifest 0.3.2; exact commit recorded at handoff | Pass | Tom Ballard | Preserve identity through public push. |
 | Claims | Every used claim is verified or visibly qualified | `CLAIMS_LEDGER.md` | Pass | Tom Ballard | Do not promote fixture image as live evidence. |
 | Assets | Required outputs exist and open correctly | Root images, issue draft, archive | Pass | Tom Ballard | Replace root preview after live capture. |
 | Technical | Submission structure and portable validation pass | Strict validator and complete test suite | Pass | Tom Ballard | Run official validator on installed checkout. |

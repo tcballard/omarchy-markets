@@ -119,6 +119,17 @@ class QmlSourceContractTests(unittest.TestCase):
         self.assertIn("readonly property int rowHeight: Style.space(44)", source)
         self.assertIn("PanelSeparator { foreground: root.foreground }", source)
 
+    def test_panel_is_anchored_square_keyboard_first_and_scrollbar_free(self) -> None:
+        source = (ROOT / "Panel.qml").read_text(encoding="utf-8")
+        self.assertIn("centerOnBar: false", source)
+        self.assertIn("contentHeight: contentColumn.implicitHeight", source)
+        self.assertNotIn("ScrollBar.vertical", source)
+        self.assertIn("Qt.callLater(function() { keyCatcher.forceActiveFocus() })", source)
+        self.assertIn('text: "STARTING PROFILES"', source)
+        self.assertIn('text: "▲"', source)
+        self.assertIn('text: "▼"', source)
+        self.assertIn('text: "Keyboard: ↑/↓ select · [/] reorder · P pin · X/Delete remove · A add · M back"', source)
+
     def test_widget_has_private_popout_contract(self) -> None:
         source = (ROOT / "BarWidget.qml").read_text(encoding="utf-8")
         for token in [

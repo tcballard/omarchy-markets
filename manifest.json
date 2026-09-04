@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.tcballard.omarchy-markets",
   "name": "Omarchy Markets",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "author": "Tom Ballard",
   "license": "MIT",
   "description": "A ticker-first, macOS Stocks-inspired market scanner for the Omarchy bar.",

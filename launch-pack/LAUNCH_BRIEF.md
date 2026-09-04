@@ -2,7 +2,7 @@
 
 - Product: Omarchy Markets
 - Release: Marketplace candidate
-- Version: 0.3.1
+- Version: 0.3.2
 - Build: Exact Git commit recorded after submission-prep changes
 - Release state: Prepared for public-repository publication and owner live acceptance
 - Release date or window: After live Omarchy capture and owner checklist approval

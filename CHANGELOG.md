@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.2 - 2026-09-04
+
+- Anchor the panel to the clicked bar item instead of forcing screen-centred placement.
+- Make all shipped starting profiles selectable again from Manage.
+- Square the manager surfaces and align reorder controls with Hyprland conventions.
+- Reclaim keyboard focus on open and expose the built-in manager key bindings.
+- Size the panel to its complete content and remove the embedded scrollbar.
+
 ## 0.3.1 - 2026-09-02
 
 - Pin quote and history workers to the trusted `/usr/bin/python3` interpreter
