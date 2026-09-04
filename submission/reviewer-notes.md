@@ -1,6 +1,6 @@
 # Marketplace reviewer notes
 
-- Plugin: Omarchy Markets 0.3.1
+- Plugin: Omarchy Markets 0.3.2
 - Intended repository: `https://github.com/tcballard/omarchy-markets`
 - Permanent community ID: `io.github.tcballard.omarchy-markets`
 - Kinds: process-wide service and bar widget

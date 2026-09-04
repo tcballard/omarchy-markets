@@ -2,7 +2,7 @@
 
 - Product: Omarchy Markets
 - Release: Marketplace candidate
-- Version: 0.3.1
+- Version: 0.3.2
 - Build: Exact Git commit and archive digest recorded at final handoff
 - Pack status: Prepared for public push and owner live acceptance
 - Publication authority: Tom Ballard; no marketplace issue may be created without explicit approval of the final body

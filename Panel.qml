@@ -146,6 +146,7 @@ Panel {
     managerMessage = ""
     syncSelection()
     root.controller.show()
+    Qt.callLater(function() { keyCatcher.forceActiveFocus() })
     if (service && typeof service.refreshIfStale === "function") service.refreshIfStale()
   }
 
@@ -398,10 +399,10 @@ Panel {
     owner: root.barIdentity
     bar: root.bar
     open: root.opened
-    centerOnBar: true
+    centerOnBar: false
     focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(Style.space(500))
-    contentHeight: panel.fittedContentHeight(contentColumn.implicitHeight, Style.space(660))
+    contentHeight: contentColumn.implicitHeight
 
     PanelKeyCatcher {
       id: keyCatcher
@@ -440,11 +441,10 @@ Panel {
         anchors.fill: parent
         contentWidth: width
         contentHeight: contentColumn.implicitHeight
-        clip: true
+        clip: false
         boundsBehavior: Flickable.StopAtBounds
         flickableDirection: Flickable.VerticalFlick
-        interactive: contentHeight > height
-        ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+        interactive: false
 
         Column {
           id: contentColumn
@@ -709,6 +709,41 @@ Panel {
             Text {
               width: parent.width
               textFormat: Text.PlainText
+              text: "STARTING PROFILES"
+              color: root.dim
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.caption
+              font.bold: true
+              font.letterSpacing: 1.1
+            }
+
+            Flow {
+              width: parent.width
+              spacing: Style.space(6)
+              height: childrenRect.height
+
+              Repeater {
+                model: root.profiles
+
+                Button {
+                  required property var modelData
+                  text: modelData.name
+                  foreground: root.foreground
+                  bordered: root.profileId === modelData.id
+                  tooltipText: "Replace this watchlist with " + modelData.name
+                  Accessible.role: Accessible.Button
+                  Accessible.name: "Apply " + modelData.name + " starting profile"
+                  Accessible.onPressAction: root.chooseProfile(modelData.id)
+                  onClicked: root.chooseProfile(modelData.id)
+                }
+              }
+            }
+
+            PanelSeparator { foreground: root.foreground }
+
+            Text {
+              width: parent.width
+              textFormat: Text.PlainText
               text: "WATCHLIST MANAGER"
               color: root.dim
               font.family: root.fontFamily
@@ -734,7 +769,7 @@ Panel {
               BorderSurface {
                 width: parent.width - addButton.width - parent.spacing
                 height: Math.max(Style.space(40), addButton.height)
-                radius: Math.max(Style.cornerRadius, Style.space(9))
+                radius: 0
                 color: Style.normalFillFor(root.foreground, Color.accent, Color.urgent)
                 borderSpec: Border.controlSpec(symbolInput.activeFocus ? "focus" : "normal",
                   root.foreground, Color.accent)
@@ -812,7 +847,7 @@ Panel {
                 readonly property bool selected: root.selectedIndex === index
                 width: managerView.width
                 height: Style.space(48)
-                radius: Math.max(Style.cornerRadius, Style.space(10))
+                radius: 0
                 color: selected
                   ? Style.selectedFillFor(root.foreground, Color.accent, Color.urgent)
                   : "transparent"
@@ -841,7 +876,8 @@ Panel {
 
                   Button {
                     id: upButton
-                    text: "↑"
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "▲"
                     foreground: root.foreground
                     enabled: managerRow.index > 0
                     opacity: enabled ? 1 : 0.35
@@ -854,7 +890,8 @@ Panel {
 
                   Button {
                     id: downButton
-                    text: "↓"
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "▼"
                     foreground: root.foreground
                     enabled: managerRow.index < root.symbols.length - 1
                     opacity: enabled ? 1 : 0.35
@@ -867,6 +904,7 @@ Panel {
 
                   Button {
                     id: removeButton
+                    anchors.verticalCenter: parent.verticalCenter
                     text: "Remove"
                     foreground: root.negativeColor
                     tooltipText: "Remove " + managerRow.modelData
@@ -948,7 +986,7 @@ Panel {
               width: parent.width
               wrapMode: Text.Wrap
               textFormat: Text.PlainText
-              text: "Profiles are starting points; edits become a custom watchlist. Pause market data to return to the profile chooser without deleting your current symbols."
+              text: "Keyboard: ↑/↓ select · [/] reorder · P pin · X/Delete remove · A add · M back"
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
