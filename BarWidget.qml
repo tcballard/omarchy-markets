@@ -83,11 +83,10 @@ BarWidget {
   readonly property color negativeColor: contrastAwareColor(
     barBackground, negativeBright, negativeDark, barForeground)
 
-  // Referencing _services makes the lookup reactive when the host mounts the
-  // singleton after the visual widget.
+  // serviceFor() tracks the host's service map without exposing private state
+  // through the third-party PluginShellApi.
   readonly property var marketService: {
-    var servicesRevision = root.bar && root.bar.shell ? root.bar.shell._services : null
-    if (!servicesRevision || !root.bar || !root.bar.shell
+    if (!root.bar || !root.bar.shell
         || typeof root.bar.shell.serviceFor !== "function") return null
     return root.bar.shell.serviceFor(root.moduleName)
   }

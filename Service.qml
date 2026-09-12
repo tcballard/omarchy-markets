@@ -72,8 +72,13 @@ Item {
   readonly property bool hasData: quotes.length > 0
   readonly property bool processRunning: _fetchProcess
     ? _fetchProcess.running === true : false
-  readonly property string sourceDirectory: manifest && manifest.__sourceDir
-    ? String(manifest.__sourceDir) : ""
+  // Third-party manifests omit installation paths. Resolve our own directory
+  // and decode URL escapes before passing the local filename as a process arg.
+  readonly property string sourceDirectory: {
+    var url = String(Qt.resolvedUrl("."))
+    if (url.indexOf("file:///") !== 0) return ""
+    return decodeURIComponent(url.substring(7)).replace(/\/+$/, "")
+  }
   readonly property string helperPath: sourceDirectory !== ""
     ? sourceDirectory + "/scripts/fetch_quotes.py" : ""
   readonly property string pythonInterpreterPath: "/usr/bin/python3"
@@ -121,6 +126,9 @@ Item {
   }
 
   function safeInBar() {
+    // Only the first-party host exposes bar membership; third-party services
+    // are mounted/unmounted by the host and do not use this polling gate.
+    if (!firstParty) return false
     // Reading the revision gives this binding a public reactive dependency;
     // inBar() itself is a function and otherwise would not invalidate it.
     var revision = pluginRegistry && pluginRegistry.registryRevision !== undefined
@@ -1181,7 +1189,11 @@ Item {
   Connections {
     target: root.pluginRegistry
     enabled: root.pluginRegistry !== null
+    // The internal registry and third-party API expose different signals.
+    ignoreUnknownSignals: true
     function onPluginsChanged() { Qt.callLater(root.reconcileEligibility) }
+    function onEnabledChanged() { Qt.callLater(root.reconcileEligibility) }
+    function onManifestChanged() { Qt.callLater(root.reconcileEligibility) }
   }
 
   onManifestChanged: Qt.callLater(reconcileEligibility)
