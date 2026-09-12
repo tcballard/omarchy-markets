@@ -1,5 +1,9 @@
 # Release checklist
 
+> Historical launch planning. The plugin was published on 4 September 2026.
+> Both root previews were replaced with actual screen captures on 12 September
+> 2026; see `docs/acceptance.md` and `submission/reviewer-notes.md` for current evidence.
+
 | Gate | Requirement | Evidence or observation | Result | Owner | Next action |
 | --- | --- | --- | --- | --- | --- |
 | Release identity | Version and candidate commit agree | Manifest 0.3.2; exact commit recorded at handoff | Pass | Tom Ballard | Preserve identity through public push. |

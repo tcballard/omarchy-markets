@@ -8,10 +8,12 @@ It is designed as an Omarchy-native market surface rather than a trading app.
 There are no accounts, portfolios, orders, recommendations, or invented
 real-time claims.
 
-![Omarchy Markets fictional-data preview](preview.png)
+![Omarchy Markets running on Omarchy with Yahoo Finance market data](preview.png)
 
-The preview uses committed fictional data. Live visual acceptance on Omarchy is
-tracked separately in [`docs/acceptance.md`](docs/acceptance.md).
+These are actual screen captures of Omarchy Markets 0.3.2 on Omarchy, taken on
+12 September 2026. The main panel shows public Yahoo Finance data; the profile
+chooser was captured with market data paused. Capture provenance and remaining
+acceptance checks are recorded in [`docs/acceptance.md`](docs/acceptance.md).
 
 ## Start with a profile
 
@@ -28,7 +30,7 @@ point: you can add, remove, reorder, or pin instruments afterwards.
 | AI & Semiconductors | Chip designers, foundries, equipment, and memory | `NVDA` |
 | UK Markets | UK benchmarks, sterling, and leading London listings | `^FTSE` |
 
-![Omarchy Markets profile chooser with fictional product data](preview-profiles.png)
+![Omarchy Markets profile chooser running on Omarchy](preview-profiles.png)
 
 The Meme Coins profile is deliberately labelled as speculative. Profile
 membership can drift, so it should never be treated as an endorsement.

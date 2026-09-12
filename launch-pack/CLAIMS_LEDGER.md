@@ -1,5 +1,9 @@
 # Claims ledger
 
+> Historical launch planning. The plugin was published on 4 September 2026.
+> Both root previews were replaced with actual screen captures on 12 September
+> 2026; see `docs/acceptance.md` and `submission/reviewer-notes.md` for current evidence.
+
 | ID | Claim | Importance | Evidence | Status | Qualification | Channels | Owner |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | C01 | Omarchy Markets provides a ticker-first bar and compact quote scanner. | Required | `BarWidget.qml`, `Panel.qml`, source-contract tests | Verified | Portable source evidence; live rendering still requires owner acceptance. | README, marketplace | Tom Ballard |

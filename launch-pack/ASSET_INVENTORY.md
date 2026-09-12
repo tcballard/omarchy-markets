@@ -1,5 +1,9 @@
 # Asset inventory
 
+> Historical launch planning. The plugin was published on 4 September 2026.
+> Both root previews were replaced with actual screen captures on 12 September
+> 2026; see `docs/acceptance.md` and `submission/reviewer-notes.md` for current evidence.
+
 | ID | Asset | Purpose | Source or provenance | Constraints | Output path | Status | Blocker or next action |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | A01 | Marketplace preview | Listing card/detail image | Deterministic fictional fixture | Replace with live crop before submission; under 50 MB and 40 MP | `preview.png` | Qualified | Tom captures the installed bar and open panel. |

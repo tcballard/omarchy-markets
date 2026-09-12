@@ -1,4 +1,9 @@
-# Marketplace issue
+# Original marketplace submission (historical)
+
+This submission was published via [issue #4216](https://github.com/omacom/omarchy-plugin-marketplace/issues/4216).
+The body below is historical; current screenshot provenance is documented in
+[`reviewer-notes.md`](reviewer-notes.md). Use the store verification/update form
+for subsequent commits, not a duplicate listing request.
 
 Title: `[Plugin]: Omarchy Markets`
 

@@ -1,6 +1,9 @@
 # Official install and capture checklist
 
-Use this after `https://github.com/tcballard/omarchy-markets` is public. The root `preview.png` currently uses committed fictional data and is not live-shell evidence.
+The root images are actual screen captures from 12 September 2026. See
+[`acceptance.md`](acceptance.md#capture-record-12-september-2026) for the source
+revision, display, commands, and observed limitations. Use this checklist for
+future captures and broader lifecycle acceptance.
 
 ## Install the candidate
 
@@ -38,4 +41,4 @@ omarchy capture screenshot region save
 
 The marketplace accepts one root preview under 50 MB and 40 megapixels. Crop tightly, keep text readable, remove unrelated notifications or windows, and replace `preview.png` without resizing it merely to meet a marketing template.
 
-Also capture the first-run profile chooser and keep it as `preview-profiles.png` for the README. Do not present either image as release evidence until the commit, Omarchy revision, display scaling, and observed state have been recorded in `docs/acceptance.md`.
+Also capture the profile chooser and keep it as `preview-profiles.png` for the README. Do not present either image as release evidence until the commit, Omarchy revision, display scaling, and observed state have been recorded in `docs/acceptance.md`.

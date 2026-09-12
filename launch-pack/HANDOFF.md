@@ -1,5 +1,9 @@
 # Launch handoff
 
+> Historical launch planning. The plugin was published on 4 September 2026.
+> Both root previews were replaced with actual screen captures on 12 September
+> 2026; see `docs/acceptance.md` and `submission/reviewer-notes.md` for current evidence.
+
 - Product: Omarchy Markets
 - Release: Marketplace candidate
 - Version: 0.3.2

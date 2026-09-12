@@ -1,5 +1,9 @@
 # Channel matrix
 
+> Historical launch planning. The plugin was published on 4 September 2026.
+> Both root previews were replaced with actual screen captures on 12 September
+> 2026; see `docs/acceptance.md` and `submission/reviewer-notes.md` for current evidence.
+
 | Channel | Audience | Desired action | Deliverable | Claim IDs | Assets and links | Owner or specialist | Output path | Authority | Status | Blocker or next action |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Repository | Prospective users and reviewers | Understand and install | README front door, docs, tests | C01–C05 | A01, A02 | Tom Ballard | `README.md` | Owner | Prepared | Publish the repository and run hosted CI. |

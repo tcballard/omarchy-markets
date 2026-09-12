@@ -25,3 +25,40 @@ verified.
 
 Record the date, plugin SHA, Omarchy SHA, monitor/scaling details, commands,
 screenshots, and failures. A generated preview is not live-shell evidence.
+
+## Capture record: 12 September 2026
+
+- Installed plugin: 0.3.2, clean source commit
+  `4a667dadfce52251ac4d897ac3f10fd5eaac3967`.
+- Omarchy: development revision `4ee6d4eeea176b0bf4014ce8b82a148a9433efff`.
+- Display: Sharp eDP-1, 1920 × 1200, scale 1.25, approximately 60 Hz.
+- Theme: `matte-black`; horizontal top bar.
+- `preview.png`: actual running panel and ticker, AI & Semiconductors watchlist,
+  NVDA selected, 1D range, public Yahoo Finance data with market-closed status.
+- `preview-profiles.png`: actual profile chooser with market data temporarily
+  paused; the existing watchlist was retained. This is the setup surface, not
+  evidence of a fresh installation.
+- Both images are direct `grim` region captures at native display scale, without
+  image synthesis, retouching, or post-capture resizing. The resulting images
+  are 637 × 1027 and 637 × 855 pixels respectively.
+
+After opening the installed panel on an empty workspace and allowing it to
+render, the captures used these logical screen rectangles:
+
+```bash
+grim -g '970,0 510x822' preview.png
+grim -g '970,0 510x684' preview-profiles.png
+```
+
+The profile image was captured after temporarily setting `dataEnabled` to
+`false`. The original `true` value was restored, the complete shell
+configuration was compared byte-for-byte with its backup, and workspace 1 was
+restored. The capture did not modify the installed plugin source.
+
+Observed: populated quote rows and price history, ticker rendering, the
+market-closed label, the data-paused state, and all six profile choices.
+Secondary text is very dim in this theme; the provider footer and “Start custom”
+control extend below the panel border. The captures preserve that actual
+appearance. They do not establish full visual or lifecycle acceptance. The
+uncompleted rows above remain open, including other themes, vertical bars,
+multiple monitors, fresh install/removal, and recovery behavior.
