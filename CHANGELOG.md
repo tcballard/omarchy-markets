@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Fix permanent loading for third-party installs by looking up the quote service
+  through the public shell API and resolving the bundled helper relative to QML.
+- Handle URL-encoded installation paths and both public and internal registry
+  notifications without startup signal warnings.
+
 ## 0.3.2 - 2026-09-04
 
 - Anchor the panel to the clicked bar item instead of forcing screen-centred placement.
