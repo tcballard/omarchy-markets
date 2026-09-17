@@ -1,12 +1,17 @@
 # Omarchy Markets
 
-Omarchy Markets brings a macOS Stocks-style market glance to the Omarchy bar:
-a scrolling ticker by default and a compact quote scanner for comparing
-instruments and inspecting price history without leaving the bar.
+[![Plugin Marketplace: Available](docs/assets/marketplace.svg)](https://plugins.omarchy.org/plugin.html?id=io.github.tcballard.omarchy-markets)
+[![Latest release](https://img.shields.io/github/v/release/tcballard/omarchy-markets?color=b3cb92)](https://github.com/tcballard/omarchy-markets/releases/latest)
+[![Tests](https://github.com/tcballard/omarchy-markets/actions/workflows/test.yml/badge.svg)](https://github.com/tcballard/omarchy-markets/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-b3cb92)](LICENSE)
 
-It is designed as an Omarchy-native market surface rather than a trading app.
-There are no accounts, portfolios, orders, recommendations, or invented
-real-time claims.
+Stocks, indices and crypto in your Omarchy bar. Follow a scrolling watchlist,
+open the panel to compare quotes, and inspect five price-history ranges. Start
+with one of six editable profiles or build your own watchlist.
+
+No account or API key. Market data stays off until you choose a profile or
+enable a custom watchlist. Quotes come from Yahoo Finance’s unofficial endpoint
+and may be delayed. This is a market glance, with no trading or portfolio tools.
 
 ![Omarchy Markets running on Omarchy with Yahoo Finance market data](preview.png)
 
@@ -14,6 +19,48 @@ These are actual screen captures of Omarchy Markets 0.3.2 on Omarchy, taken on
 12 September 2026. The main panel shows public Yahoo Finance data; the profile
 chooser was captured with market data paused. Capture provenance and remaining
 acceptance checks are recorded in [`docs/acceptance.md`](docs/acceptance.md).
+
+## Install
+
+Requires **Omarchy 4 / Quattro** with shell-plugin support and **Python 3.10+**
+at `/usr/bin/python3`. The helper uses the standard library only.
+
+Install the public repository and enable the widget:
+
+```bash
+omarchy plugin add https://github.com/tcballard/omarchy-markets.git --enable
+```
+
+Open the widget and choose a profile to begin. Installation follows the current
+`main` branch; the release tag records an immutable source version. To update:
+
+```bash
+omarchy plugin update io.github.tcballard.omarchy-markets
+```
+
+If an older installation stays on **Loading**, update to include the public
+plugin API fix shipped in **v0.3.3**. For local development, pass the checkout
+path to `omarchy plugin add` instead of the repository URL.
+
+The widget defaults to the right side of the bar. If needed:
+
+```bash
+omarchy bar put io.github.tcballard.omarchy-markets --section right
+```
+
+### Upgrade from Market Watch 0.1
+
+The product name and community plugin ID changed in 0.2, so Omarchy treats this
+as a new plugin rather than an in-place update. Remove the old entry, install
+Omarchy Markets, and choose a profile or rebuild the watchlist in the panel:
+
+```bash
+omarchy plugin remove io.github.tcballard.market-watch
+omarchy plugin add https://github.com/tcballard/omarchy-markets.git --enable
+```
+
+The old plugin had no persistent market-data cache. Its inline settings are not
+silently copied into the new consent-gated configuration.
 
 ## Start with a profile
 
@@ -52,39 +99,6 @@ membership can drift, so it should never be treated as an endorsement.
 - Shares one poller across monitors and stores a bounded last-good cache so a
   temporary outage does not turn known values into zeroes.
 - Uses symbols, arrows, signs, and text as well as colour for direction.
-
-## Install
-
-Install the public repository and enable the widget:
-
-```bash
-omarchy plugin add https://github.com/tcballard/omarchy-markets.git --enable
-```
-
-For local development, pass the checkout path instead. The current
-community-safe plugin ID is `io.github.tcballard.omarchy-markets`;
-`omarchy.markets` is intentionally kept free for a future upstream-owned
-package.
-
-The widget defaults to the right side of the bar. If needed:
-
-```bash
-omarchy bar put io.github.tcballard.omarchy-markets --section right
-```
-
-### Upgrade from Market Watch 0.1
-
-The product name and community plugin ID changed in 0.2, so Omarchy treats this
-as a new plugin rather than an in-place update. Remove the old entry, install
-Omarchy Markets, and choose a profile or rebuild the watchlist in the panel:
-
-```bash
-omarchy plugin remove io.github.tcballard.market-watch
-omarchy plugin add "$PWD" --enable
-```
-
-The old plugin had no persistent market-data cache. Its inline settings are not
-silently copied into the new consent-gated configuration.
 
 ## Use
 
@@ -182,13 +196,26 @@ and the [yfinance project notice](https://github.com/ranaroussi/yfinance#legal-s
 - Network access to `query1.finance.yahoo.com` after explicit setup.
 
 Omarchy plugins execute as unsandboxed user code inside the long-running shell.
-This plugin never requests `sudo`, installs packages, starts a systemd service,
-reads credentials, evaluates downloaded code, or interpolates a symbol into a
-shell command. Symbols are allowlisted and percent-encoded before the helper
+Omarchy Markets runs with your normal user permissions. It does not request
+elevation, install packages, start a system service, read credentials, evaluate
+downloaded code, or interpolate a symbol into a shell command. Symbols are allowlisted and percent-encoded before the helper
 uses the fixed HTTPS host. See [`SECURITY.md`](SECURITY.md) for the full boundary
 and reporting guidance.
 
-## Verification
+## Release and marketplace status
+
+[Releases](https://github.com/tcballard/omarchy-markets/releases) record tagged
+source versions and checksums. See the [changelog](CHANGELOG.md) for changes.
+
+The plugin is [available in the marketplace](https://plugins.omarchy.org/plugin.html?id=io.github.tcballard.omarchy-markets).
+The last maintainer-reviewed snapshot is
+[`4a667da`](https://github.com/tcballard/omarchy-markets/commit/4a667dadfce52251ac4d897ac3f10fd5eaac3967)
+(0.3.2), approved on 4 September 2026. The newer release is tracked in
+[verification request #6586](https://github.com/omacom/omarchy-plugin-marketplace/issues/6586).
+The marketplace badge means **listed and available**, not that every later
+commit is verified. Verification applies to an exact commit and is not a security audit.
+
+## Development and validation
 
 ```bash
 ./tests/run
@@ -204,15 +231,20 @@ The product contract lives in [`docs/design.md`](docs/design.md).
 The exact live-install and marketplace capture checklist is in
 [`docs/capture.md`](docs/capture.md).
 
-## Update and remove
+## Remove
 
 ```bash
-omarchy plugin update io.github.tcballard.omarchy-markets
 omarchy plugin remove io.github.tcballard.omarchy-markets
 ```
 
 Removal stops all polling. To erase optional last-good market data too, delete
 the cache directory documented above.
+
+## Support
+
+[Report a bug or request a feature](https://github.com/tcballard/omarchy-markets/issues).
+Include your plugin version, Omarchy revision, bar orientation and reproduction
+steps. For sensitive reports, see [SECURITY.md](SECURITY.md).
 
 ## License
 
@@ -225,3 +257,7 @@ The scan-first interaction model is informed by
 Omarchy Markets is an independent implementation that adds profiles, explicit
 network consent, shared polling, bounded caching, and first-party-oriented
 hardening.
+
+The marketplace badge uses the Omarchy icon from
+[omarchy-badges](https://github.com/tcballard/omarchy-badges), with attribution in
+[badge credits](docs/assets/CREDITS.md).

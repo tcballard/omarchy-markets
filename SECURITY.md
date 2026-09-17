@@ -2,7 +2,7 @@
 
 Omarchy Markets runs inside the unsandboxed, long-lived `omarchy-shell`
 process. Please report suspected vulnerabilities privately through GitHub's
-security-advisory interface once this repository is public. Do not include
+[security-advisory interface](https://github.com/tcballard/omarchy-markets/security/advisories/new). Do not include
 credentials or private market/watchlist data in a public issue.
 
 ## Boundary

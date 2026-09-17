@@ -1,11 +1,16 @@
 # Changelog
 
-## Unreleased
+## 0.3.3 - 2026-09-17
 
 - Fix permanent loading for third-party installs by looking up the quote service
   through the public shell API and resolving the bundled helper relative to QML.
 - Handle URL-encoded installation paths and both public and internal registry
   notifications without startup signal warnings.
+
+- Replace illustrative previews with documented live Omarchy captures.
+- Clarify installation, update, data permissions and exact-commit marketplace
+  status; add marketplace, release, CI and licence badges.
+- Add a tested, immutable tagged-release workflow with source archives and checksums.
 
 ## 0.3.2 - 2026-09-04
 
