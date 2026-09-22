@@ -7,6 +7,29 @@ on:
       - manifest.json
       - .github/workflows/release.yml
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish after exact-source host acceptance
+        type: boolean
+        default: false
+      tested_commit:
+        description: Full plugin SHA tested on Omarchy (must match this run)
+        type: string
+      omarchy_commit:
+        description: Full tested Omarchy SHA
+        type: string
+      architecture:
+        description: Tested CPU architecture
+        type: choice
+        options: [x86_64]
+        default: x86_64
+      host_checks_passed:
+        description: All required checks in docs/releasing.md passed
+        type: boolean
+        default: false
+      host_notes:
+        description: Host results, display/theme details and remaining limitations
+        type: string
 
 permissions:
   contents: read
@@ -38,7 +61,32 @@ jobs:
           git diff --check
           test -z "$(git status --porcelain)"
           test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$GITHUB_SHA"
-      - name: Build, tag and publish immutable source release
+      - name: Record exact-source host acceptance
+        if: github.event_name == 'workflow_dispatch' && inputs.publish
+        env:
+          TESTED_COMMIT: ${{ inputs.tested_commit }}
+          OMARCHY_COMMIT: ${{ inputs.omarchy_commit }}
+          TESTED_ARCHITECTURE: ${{ inputs.architecture }}
+          HOST_CHECKS_PASSED: ${{ inputs.host_checks_passed }}
+          HOST_NOTES: ${{ inputs.host_notes }}
+        run: python3 .github/scripts/host_evidence.py "$RUNNER_TEMP/host-acceptance.json"
+      - name: Prepare source assets
+        env:
+          PUBLISH: ${{ github.event_name == 'workflow_dispatch' && inputs.publish }}
+        run: |
+          if test "$PUBLISH" = true; then
+            python3 .github/scripts/release.py build "$RUNNER_TEMP/markets-release" --host-evidence "$RUNNER_TEMP/host-acceptance.json"
+          else
+            python3 .github/scripts/release.py build "$RUNNER_TEMP/markets-release"
+          fi
+      - name: Keep prepared assets for review
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: markets-source-${{ github.sha }}
+          path: ${{ runner.temp }}/markets-release/
+          retention-days: 14
+      - name: Tag and publish accepted source release
+        if: github.event_name == 'workflow_dispatch' && inputs.publish
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -56,7 +104,6 @@ jobs:
             git tag -a "$tag" "$GITHUB_SHA" -m "Omarchy Markets $tag"
             git push origin "refs/tags/$tag"
           fi
-          python3 .github/scripts/release.py build "$RUNNER_TEMP/markets-release"
           if gh release view "$tag" --json isDraft --jq .isDraft > "$RUNNER_TEMP/release-state"; then
             if test "$(cat "$RUNNER_TEMP/release-state")" = false; then
               gh release download "$tag" --dir "$RUNNER_TEMP/markets-downloaded"

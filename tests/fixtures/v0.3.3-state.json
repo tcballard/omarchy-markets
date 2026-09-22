@@ -1,0 +1,56 @@
+{
+  "sourceCommit": "90ddf9b58708b3d9040cd7ca63cf82c4f992caa4",
+  "version": "0.3.3",
+  "settings": {
+    "id": "io.github.tcballard.omarchy-markets",
+    "dataEnabled": true,
+    "profile": "",
+    "symbols": "AAPL, NVDA",
+    "primarySymbol": "NVDA",
+    "selectedRange": "1mo",
+    "barMode": "single",
+    "refreshIntervalSec": 600,
+    "showPrice": false,
+    "tickerWidth": 360,
+    "tickerSpeed": 0,
+    "tickerPaused": true
+  },
+  "cache": {
+    "entries": {
+      "AAPL|1d": {
+        "quote": {
+          "change": 2.0,
+          "changePercent": 2.0,
+          "currency": "USD",
+          "dayHigh": null,
+          "dayLow": null,
+          "exchange": null,
+          "exchangeTimezone": null,
+          "fiftyTwoWeekHigh": null,
+          "fiftyTwoWeekLow": null,
+          "instrumentType": null,
+          "marketState": "unknown",
+          "marketTime": "2023-11-14T22:13:20Z",
+          "name": "Example Incorporated",
+          "previousClose": 100.0,
+          "range": "1d",
+          "regularMarketOpen": null,
+          "regularMarketPrice": 102.0,
+          "sessionState": "unknown",
+          "sparkline": [
+            100.0,
+            101.0,
+            102.0
+          ],
+          "sparklineTimestamps": [],
+          "symbol": "AAPL",
+          "volume": null
+        },
+        "range": "1d",
+        "storedAt": 1700000000.0,
+        "symbol": "AAPL"
+      }
+    },
+    "schemaVersion": 1
+  }
+}

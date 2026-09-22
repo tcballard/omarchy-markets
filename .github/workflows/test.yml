@@ -9,6 +9,18 @@ permissions:
   contents: read
 
 jobs:
+  workflows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.4.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: "1.25.14"
+      - name: Validate workflows with pinned actionlint
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@914e7df21a07ef503a81201c76d2b11c789d3fca
+          "$(go env GOPATH)/bin/actionlint" .github/workflows/*.yml
   portable:
     runs-on: ubuntu-latest
     timeout-minutes: 10

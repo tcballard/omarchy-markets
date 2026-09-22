@@ -122,7 +122,9 @@ Item {
   function helperCommand(argumentsValue) {
     if (pythonInterpreterPath !== "/usr/bin/python3" ||
         helperPath.charAt(0) !== "/") return []
-    return [pythonInterpreterPath, helperPath].concat(argumentsValue || [])
+    // Standard-library-only helper: ignore inherited Python paths and disable
+    // site startup hooks, including hooks in the user's site-packages.
+    return [pythonInterpreterPath, "-I", "-S", helperPath].concat(argumentsValue || [])
   }
 
   function safeInBar() {
@@ -1122,6 +1124,8 @@ Item {
       property int generationToken: 0
       property bool retirementQueued: false
       running: false
+      clearEnvironment: true
+      environment: ({ LANG: "C.UTF-8", LC_ALL: "C.UTF-8" })
       command: []
       stdout: StdioCollector {
         waitForEnd: true
@@ -1155,6 +1159,8 @@ Item {
       property string requestKey: ""
       property bool retirementQueued: false
       running: false
+      clearEnvironment: true
+      environment: ({ LANG: "C.UTF-8", LC_ALL: "C.UTF-8" })
       command: []
       stdout: StdioCollector {
         waitForEnd: true

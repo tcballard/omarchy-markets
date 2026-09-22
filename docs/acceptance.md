@@ -26,6 +26,29 @@ verified.
 Record the date, plugin SHA, Omarchy SHA, monitor/scaling details, commands,
 screenshots, and failures. A generated preview is not live-shell evidence.
 
+## v0.3.4 preparation: 22 September 2026
+
+The candidate addresses the overflow and muted-text defects documented in the
+historical capture below. Portable validation passed: 77 Python tests, 50 model
+tests, 24 lifecycle tests, the public API/path probes, isolated-helper startup,
+popup contrast, keyboard scrolling and v0.3.3 settings/cache regressions.
+Commands: `./tests/run`, `git diff --check`, and the Plugin Skills Bundle's
+`validate_plugin.py --json --security .` at bundle commit
+`221f77bebf7e240a5ef5f54bd2a102e68119bb69`.
+
+These results describe the v0.3.4 preparation changes based on
+`90ddf9b58708b3d9040cd7ca63cf82c4f992caa4`; CI reruns the checks against each PR
+commit. The advisory scan found no structural errors or security findings;
+process execution, collected output and documentation privilege references
+still require human interpretation and are not certification.
+
+The 0.3.4 live checks and fresh screenshots have **not** been performed in this
+development environment. Historical observations are retained below, not
+counted as new acceptance. The [release guide](releasing.md) names the required
+x86_64 host checks. Publication now requires a host record for the exact merged
+source and packages it with the release. Multi-monitor acceptance remains
+unclaimed until observed separately.
+
 ## Capture record: 12 September 2026
 
 - Installed plugin: 0.3.2, clean source commit
