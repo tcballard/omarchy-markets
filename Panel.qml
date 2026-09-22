@@ -40,10 +40,13 @@ Panel {
   readonly property var focusedQuote: MarketModel.findQuote(service.quotes, focusedSymbol)
   readonly property bool historyMatches: service.historySymbol === focusedSymbol
     && service.historyRange === selectedRange
-  readonly property var detailQuote: historyMatches && service.historyQuote
-    ? service.historyQuote : focusedQuote
+  // Quote totals always describe the quote snapshot. History is a separate
+  // series and must never inherit a different range while a request is pending.
+  readonly property var detailQuote: focusedQuote
+  readonly property var chartQuote: MarketModel.chartQuoteFor(
+    focusedQuote, service.historyQuote, historyMatches, selectedRange)
   readonly property var rangeResult: MarketModel.rangePerformance(
-    detailQuote && Array.isArray(detailQuote.sparkline) ? detailQuote.sparkline : [])
+    chartQuote && Array.isArray(chartQuote.sparkline) ? chartQuote.sparkline : [])
   readonly property var stats: MarketModel.statRows(detailQuote)
   readonly property color foreground: Color.popups.text
   // Muted is a global palette token, not a promise of readable popup text.
@@ -407,8 +410,10 @@ Panel {
     open: root.opened
     centerOnBar: false
     focusTarget: keyCatcher
-    contentWidth: panel.fittedContentWidth(Style.space(500))
-    contentHeight: panel.fittedContentHeight(contentColumn.implicitHeight)
+    contentWidth: panel.fittedContentWidth(Style.space(620))
+    contentHeight: panel.fittedContentHeight(contentColumn.implicitHeight + footerReserve)
+    readonly property real footerReserve: dataFooter.visible
+      ? dataFooter.implicitHeight + Style.space(12) : 0
 
     PanelKeyCatcher {
       id: keyCatcher
@@ -445,6 +450,7 @@ Panel {
       Flickable {
         id: panelScroll
         anchors.fill: parent
+        anchors.bottomMargin: panel.footerReserve
         contentWidth: width
         contentHeight: contentColumn.implicitHeight
         clip: true
@@ -526,47 +532,6 @@ Panel {
                 Accessible.onPressAction: root.refresh()
                 onClicked: root.refresh()
               }
-            }
-          }
-
-          Row {
-            id: marketToolbar
-            visible: !root.setupRequired && !root.managing
-            width: parent.width
-            spacing: Style.space(4)
-
-            Repeater {
-              model: MarketModel.rangeOptions()
-
-              delegate: Button {
-                id: toolbarRangeButton
-                required property var modelData
-                text: modelData.label
-                foreground: root.foreground
-                bordered: root.selectedRange === modelData.id
-                horizontalPadding: Style.space(8)
-                verticalPadding: Style.space(5)
-                Accessible.role: Accessible.Button
-                Accessible.name: "Show " + modelData.label + " price history"
-                Accessible.onPressAction: root.chooseRange(toolbarRangeButton.modelData.id)
-                onClicked: root.chooseRange(toolbarRangeButton.modelData.id)
-              }
-            }
-
-            Item {
-              width: Math.max(0, marketToolbar.width - toolbarStatus.implicitWidth
-                - Style.space(180))
-              height: 1
-            }
-
-            Text {
-              id: toolbarStatus
-              anchors.verticalCenter: parent.verticalCenter
-              textFormat: Text.PlainText
-              text: root.stateLabel()
-              color: root.statusIsWarning() ? root.negativeColor : root.dim
-              font.family: root.fontFamily
-              font.pixelSize: Style.font.caption
             }
           }
 
@@ -1039,7 +1004,7 @@ Panel {
 
             ListView {
               id: watchlist
-              readonly property int rowHeight: Style.space(44)
+              readonly property int rowHeight: Style.space(56)
               readonly property int rowSpacing: 0
               readonly property int rowsHeight: root.symbols.length * rowHeight
                 + Math.max(0, root.symbols.length - 1) * rowSpacing
@@ -1086,41 +1051,44 @@ Panel {
                   anchors.fill: parent
                   anchors.leftMargin: Style.space(10)
                   anchors.rightMargin: Style.space(10)
-                  spacing: Style.space(9)
+                  spacing: Style.space(14)
 
-                  Text {
-                    id: rowSymbol
-                    width: Style.space(64)
+                  Column {
+                    width: Math.max(0, parent.width - rowNumbers.width
+                      - (rowSpark.visible ? rowSpark.width + parent.spacing : 0)
+                      - parent.spacing)
                     anchors.verticalCenter: parent.verticalCenter
-                    textFormat: Text.PlainText
-                    text: quoteRow.modelData
-                    color: root.foreground
-                    font.family: root.fontFamily
-                    font.pixelSize: Style.font.body
-                    font.bold: true
-                    elide: Text.ElideRight
-                  }
+                    spacing: Style.space(3)
 
-                  Text {
-                    width: Math.max(Style.space(76), parent.width - rowSymbol.width
-                      - rowSpark.width - rowPrice.width - rowChange.width
-                      - parent.spacing * 4)
-                    anchors.verticalCenter: parent.verticalCenter
-                    textFormat: Text.PlainText
-                    text: quoteRow.quote ? quoteRow.quote.name : "Unavailable"
-                    color: root.dim
-                    font.family: root.fontFamily
-                    font.pixelSize: Style.font.bodySmall
-                    elide: Text.ElideRight
+                    Text {
+                      width: parent.width
+                      textFormat: Text.PlainText
+                      text: quoteRow.modelData
+                      color: root.foreground
+                      font.family: root.fontFamily
+                      font.pixelSize: Style.font.body
+                      font.bold: true
+                      elide: Text.ElideRight
+                    }
+
+                    Text {
+                      width: parent.width
+                      textFormat: Text.PlainText
+                      text: quoteRow.quote ? quoteRow.quote.name : "Unavailable"
+                      color: root.dim
+                      font.family: root.fontFamily
+                      font.pixelSize: Style.font.caption
+                      elide: Text.ElideRight
+                    }
                   }
 
                   Sparkline {
                     id: rowSpark
-                    width: Style.space(72)
-                    height: Style.space(24)
+                    visible: quoteRow.width >= Style.space(420)
+                    width: Style.space(92)
+                    height: Style.space(28)
                     anchors.verticalCenter: parent.verticalCenter
-                    points: quoteRow.quote
-                      ? quoteRow.quote.sparkline : []
+                    points: quoteRow.quote ? quoteRow.quote.sparkline : []
                     timestamps: quoteRow.quote ? quoteRow.quote.sparklineTimestamps : []
                     referenceValue: quoteRow.quote ? quoteRow.quote.previousClose : NaN
                     lineColor: root.movementColorFor(quoteRow.quote)
@@ -1128,36 +1096,40 @@ Panel {
                     showGrid: false
                   }
 
-                  Text {
-                    id: rowPrice
-                    width: Style.space(76)
+                  Column {
+                    id: rowNumbers
+                    width: Math.min(Style.space(150), parent.width * 0.45)
                     anchors.verticalCenter: parent.verticalCenter
-                    textFormat: Text.PlainText
-                    horizontalAlignment: Text.AlignRight
-                    text: quoteRow.quote
-                      ? MarketModel.formatPrice(quoteRow.quote.regularMarketPrice,
-                        quoteRow.quote.currency) : "—"
-                    color: root.foreground
-                    font.family: root.fontFamily
-                    font.pixelSize: Style.font.body
-                  }
+                    spacing: Style.space(3)
 
-                  Text {
-                    id: rowChange
-                    width: Style.space(112)
-                    anchors.verticalCenter: parent.verticalCenter
-                    textFormat: Text.PlainText
-                    horizontalAlignment: Text.AlignRight
-                    text: quoteRow.quote
-                      ? root.directionArrow(quoteRow.quote) + " "
-                        + MarketModel.formatPercent(quoteRow.quote.changePercent)
-                        + (quoteRow.stale ? " · STALE" : "") : "—"
-                    color: quoteRow.stale ? root.negativeColor
-                      : root.movementColorFor(quoteRow.quote)
-                    font.family: root.fontFamily
-                    font.pixelSize: Style.font.bodySmall
-                    font.bold: true
-                    elide: Text.ElideLeft
+                    Text {
+                      width: parent.width
+                      textFormat: Text.PlainText
+                      horizontalAlignment: Text.AlignRight
+                      text: quoteRow.quote
+                        ? MarketModel.formatPrice(quoteRow.quote.regularMarketPrice,
+                          quoteRow.quote.currency) : "—"
+                      color: root.foreground
+                      font.family: root.fontFamily
+                      font.pixelSize: Style.font.body
+                      elide: Text.ElideLeft
+                    }
+
+                    Text {
+                      width: parent.width
+                      textFormat: Text.PlainText
+                      horizontalAlignment: Text.AlignRight
+                      text: quoteRow.quote
+                        ? root.directionArrow(quoteRow.quote) + " "
+                          + MarketModel.formatPercent(quoteRow.quote.changePercent)
+                          + (quoteRow.stale ? " · STALE" : " today") : "—"
+                      color: quoteRow.stale ? root.negativeColor
+                        : root.movementColorFor(quoteRow.quote)
+                      font.family: root.fontFamily
+                      font.pixelSize: Style.font.caption
+                      font.bold: true
+                      elide: Text.ElideLeft
+                    }
                   }
                 }
 
@@ -1244,8 +1216,9 @@ Panel {
                           root.detailQuote.currency) : "—"
                       color: root.foreground
                       font.family: root.fontFamily
-                      font.pixelSize: Style.font.title
+                      font.pixelSize: Style.font.heading * 1.5
                       font.bold: true
+                      elide: Text.ElideLeft
                     }
 
                     Text {
@@ -1256,18 +1229,28 @@ Panel {
                         ? root.directionArrow(root.detailQuote) + " "
                           + MarketModel.formatDelta(root.detailQuote.change,
                             root.detailQuote.currency) + "  "
-                          + MarketModel.formatPercent(root.detailQuote.changePercent) + " today"
+                          + MarketModel.formatPercent(root.detailQuote.changePercent)
                         : "—"
                       color: root.movementColorFor(root.detailQuote)
                       font.family: root.fontFamily
                       font.pixelSize: Style.font.caption
                       font.bold: true
                     }
+
+                    Text {
+                      width: parent.width
+                      textFormat: Text.PlainText
+                      text: "vs previous close"
+                      horizontalAlignment: Text.AlignRight
+                      color: root.dim
+                      font.family: root.fontFamily
+                      font.pixelSize: Style.font.caption
+                    }
                   }
                 }
 
                 Row {
-                  visible: false
+                  id: marketToolbar
                   width: parent.width
                   spacing: Style.space(5)
 
@@ -1290,49 +1273,63 @@ Panel {
                   }
                 }
 
-                Sparkline {
+                Item {
                   width: parent.width
-                  height: Style.space(112)
-                  points: root.detailQuote
-                    ? root.detailQuote.sparkline : []
-                  timestamps: root.detailQuote ? root.detailQuote.sparklineTimestamps : []
-                  referenceValue: root.detailQuote ? root.detailQuote.previousClose : NaN
-                  lineColor: root.rangeMovementColor()
-                  referenceColor: root.dim
-                  showGrid: true
+                  height: Style.space(160)
+
+                  Sparkline {
+                    anchors.fill: parent
+                    visible: root.rangeResult.direction !== "unknown"
+                    points: root.chartQuote ? root.chartQuote.sparkline : []
+                    timestamps: root.chartQuote ? root.chartQuote.sparklineTimestamps : []
+                    referenceValue: root.rangeResult.first === null ? NaN : root.rangeResult.first
+                    lineColor: root.rangeMovementColor()
+                    referenceColor: root.dim
+                    showGrid: true
+                  }
+
+                  Text {
+                    anchors.centerIn: parent
+                    width: parent.width
+                    visible: root.rangeResult.direction === "unknown"
+                    textFormat: Text.PlainText
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.Wrap
+                    text: service.historyRefreshing
+                      ? "Loading " + MarketModel.rangeLabel(root.selectedRange) + " history…"
+                      : "History unavailable for this range"
+                    color: root.dim
+                    font.family: root.fontFamily
+                    font.pixelSize: Style.font.body
+                  }
                 }
 
-                Row {
+                Text {
                   width: parent.width
+                  textFormat: Text.PlainText
+                  text: MarketModel.rangeLabel(root.selectedRange) + " · "
+                    + root.rangeArrow() + " " + MarketModel.formatPercent(root.rangeResult.percent)
+                    + " from first plotted price"
+                  color: root.rangeMovementColor()
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.bodySmall
+                  font.bold: true
+                  wrapMode: Text.Wrap
+                }
 
-                  Text {
-                    width: parent.width - rangeReturn.width
-                    textFormat: Text.PlainText
-                    text: service.historyRefreshing && root.historyMatches
-                      ? "Loading " + MarketModel.rangeLabel(root.selectedRange) + " history…"
-                      : root.detailQuote
-                        ? MarketModel.marketStateLabel(root.detailQuote) + " · "
-                          + MarketModel.asOfLabel(root.detailQuote, root.nowMs)
-                        : (service.historyError || root.errorFor(root.focusedSymbol)
-                          ? (service.historyError || root.errorFor(root.focusedSymbol).message)
-                          : "History unavailable")
-                    color: service.historyState === "stale" ? root.negativeColor : root.dim
-                    font.family: root.fontFamily
-                    font.pixelSize: Style.font.caption
-                    elide: Text.ElideRight
-                  }
-
-                  Text {
-                    id: rangeReturn
-                    textFormat: Text.PlainText
-                    text: root.rangeArrow() + " "
-                      + MarketModel.formatPercent(root.rangeResult.percent) + " "
-                      + MarketModel.rangeLabel(root.selectedRange)
-                    color: root.rangeMovementColor()
-                    font.family: root.fontFamily
-                    font.pixelSize: Style.font.caption
-                    font.bold: true
-                  }
+                Text {
+                  width: parent.width
+                  textFormat: Text.PlainText
+                  text: service.historyRefreshing
+                    ? "Updating " + MarketModel.rangeLabel(root.selectedRange) + " history…"
+                    : root.chartQuote
+                      ? MarketModel.asOfLabel(root.chartQuote, root.nowMs)
+                        + (service.historyState === "stale" && root.historyMatches ? " · Cached history" : "")
+                      : (service.historyError || "Try another range or refresh quotes")
+                  color: service.historyState === "stale" ? root.negativeColor : root.dim
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.caption
+                  wrapMode: Text.Wrap
                 }
 
                 Grid {
@@ -1406,18 +1403,24 @@ Panel {
             }
           }
 
-          Text {
-            visible: !root.setupRequired && !root.managing
-            width: parent.width
-            wrapMode: Text.Wrap
-            textFormat: Text.PlainText
-            text: "Yahoo Finance chart · unofficial, best effort · informational only"
-            color: root.dim
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.caption
-            horizontalAlignment: Text.AlignHCenter
-          }
         }
+      }
+
+      // Reserve a fixed footer inside the host's padded content holder. The
+      // watchlist and chart scroll above it, including on short displays.
+      Text {
+        id: dataFooter
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        visible: !root.setupRequired && !root.managing
+        wrapMode: Text.Wrap
+        textFormat: Text.PlainText
+        text: "Yahoo Finance · Unofficial data · Informational only"
+        color: root.dim
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.caption
+        horizontalAlignment: Text.AlignHCenter
       }
     }
   }

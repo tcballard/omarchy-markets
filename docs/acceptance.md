@@ -26,6 +26,37 @@ verified.
 Record the date, plugin SHA, Omarchy SHA, monitor/scaling details, commands,
 screenshots, and failures. A generated preview is not live-shell evidence.
 
+## v0.4.0 UX refresh — pending host acceptance
+
+The 22 September XPS screenshot supplied by Tom prompted a wider watchlist,
+clearer chart comparisons, chart-local range controls and an inset footer.
+The screenshot is evidence for the preceding UI, not the refreshed build.
+
+Before publishing the exact merged v0.4.0 candidate, check:
+
+- Eight- and twelve-symbol watchlists: company names, prices and daily changes
+  stay inside each row, including long symbols and large currency values.
+- Short/narrow screens and increased text scale: rows scroll, mini charts hide
+  on narrow panels, and the provider footer remains inside the border.
+- Select symbols and all five ranges quickly: no old-symbol or daily chart is
+  labelled as another range; loading, offline and cached states are clear.
+- A quote with a positive daily change and negative plotted return has explicit
+  comparison labels and a baseline matching the plotted return.
+- Keyboard selection remains visible; range arrows, Manage, setup, pinning,
+  Escape, outside click and panel switching still work in light/dark themes.
+
+The v0.3.4 host pass does not cover this new layout. All required checks from
+[the release guide](releasing.md) still apply to the new release.
+
+## v0.3.4 publication — 22 September 2026
+
+Tom confirmed the required XPS host checks passed at plugin commit
+`c2eb85ea5302d2350ae0ebe8c97ce7ecebd1ed1d` on Omarchy
+`4ee6d4eeea176b0bf4014ce8b82a148a9433efff`. The published
+[v0.3.4 host record](https://github.com/tcballard/omarchy-markets/releases/download/v0.3.4/HOST-ACCEPTANCE.json)
+contains that user attestation and its limits. The subsequent screenshot shows
+that the footer still needs attention; this is addressed in the v0.4.0 layout.
+
 ## v0.3.4 preparation: 22 September 2026
 
 The candidate addresses the overflow and muted-text defects documented in the

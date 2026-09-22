@@ -691,6 +691,12 @@ function downsampleSparkline(points, requestedMaximum) {
   return result;
 }
 
+// Never show a one-day fallback as a longer requested range.
+function chartQuoteFor(quote, history, matches, range) {
+  if (matches && history) return history;
+  return range === "1d" ? quote : null;
+}
+
 function rangePerformance(points) {
   var first = null;
   var last = null;
@@ -699,7 +705,7 @@ function rangePerformance(points) {
   var index;
   var value;
   if (!isArray(points)) {
-    return { change: null, percent: null, direction: "unknown" };
+    return { change: null, percent: null, direction: "unknown", first: null };
   }
   for (index = 0; index < points.length; index += 1) {
     value = sparklineValue(points[index]);
@@ -709,10 +715,11 @@ function rangePerformance(points) {
     count += 1;
   }
   if (first === null || last === null || count < 2) {
-    return { change: null, percent: null, direction: "unknown" };
+    return { change: null, percent: null, direction: "unknown", first: null };
   }
   change = last - first;
   return {
+    first: first,
     change: change,
     percent: first === 0 ? null : change / first * 100,
     direction: changeDirection(change)
@@ -1448,6 +1455,7 @@ if (typeof module !== "undefined" && module && module.exports) {
     timestampMilliseconds: timestampMilliseconds,
     downsampleSparkline: downsampleSparkline,
     rangePerformance: rangePerformance,
+    chartQuoteFor: chartQuoteFor,
     sanitizeQuote: sanitizeQuote,
     normalizeProviderResponse: normalizeProviderResponse,
     sanitizeProviderResponse: sanitizeProviderResponse,

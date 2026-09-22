@@ -17,8 +17,11 @@
   manager state, ticker pause, and focus. Inspecting a row never silently
   changes the pinned bar symbol.
 - Everyday hierarchy: the horizontal ticker is the default bar presentation;
-  the panel places range selection first, then dense quote rows, then one flat
-  selected-instrument detail. Profiles remain setup and management concerns.
+  the panel puts company names below symbols, prices and daily changes in an
+  aligned column, and range controls inside the selected-instrument detail.
+  The chart baseline and return both use the first plotted price; quote changes
+  explicitly compare against previous close. The provider footer has reserved
+  space outside the scrolling viewport. Profiles remain setup and management concerns.
 - Durable configuration: selected profile, symbols, pinned symbol, selected
   chart range, bar mode, ticker width/speed, refresh interval, and consent live
   inline on the widget entry in Omarchy's `shell.json`.

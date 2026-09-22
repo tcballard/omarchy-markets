@@ -72,15 +72,18 @@ membership can drift, so it should never be treated as an endorsement.
 - Scrolls the watchlist across a bounded horizontal ticker by default, with a
   persistent pause control and a zero-speed motion-off setting; vertical bars
   use the compact pinned-symbol presentation.
-- Keeps the everyday panel dense and scan-first: ranges at the top, compact
-  quote rows in the middle, and one flat selected-instrument detail below.
+- Keeps the watchlist first, with company names beneath symbols and aligned
+  prices and daily changes. Chart ranges sit beside the selected instrument’s
+  larger chart below. Narrow panels hide row charts to keep names readable.
 - Keeps Profiles in onboarding and management, so they accelerate setup without
   turning the normal market view into a configuration dashboard.
 - Inspects a row without silently changing the bar; pinning the selected symbol
   is a separate action.
 - Switches between 1D, 5D, 1M, 6M, and 1Y history for the selected instrument.
 - Shows previous close, open, day range, 52-week range, volume, and the selected
-  range's return when the provider supplies them.
+  range's return when the provider supplies them. Daily changes compare with
+  previous close; chart returns and the dashed baseline use the first plotted
+  price. They can have different signs without describing conflicting data.
 - Shares one poller across monitors and stores a bounded last-good cache so a
   temporary outage does not turn known values into zeroes.
 - Uses symbols, arrows, signs, and text as well as colour for direction.

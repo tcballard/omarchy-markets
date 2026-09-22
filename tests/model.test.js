@@ -293,23 +293,33 @@ test("downsampling filters invalid values without manufacturing zeroes", () => {
   assert.deepEqual(model.downsampleSparkline(null, 10), []);
 });
 
+test("range switches never relabel daily or previous-symbol data", () => {
+  const daily = quote({sparkline: [100, 103]});
+  const history = quote({sparkline: [90, 103]});
+  assert.equal(model.chartQuoteFor(daily, history, true, "1mo"), history);
+  assert.equal(model.chartQuoteFor(daily, history, false, "1mo"), null);
+  assert.equal(model.chartQuoteFor(daily, null, true, "1y"), null);
+  assert.equal(model.chartQuoteFor(daily, history, false, "1d"), daily);
+  assert.equal(model.chartQuoteFor(null, null, false, "1d"), null);
+});
+
 test("computes selected-range performance from first to last finite point", () => {
   assert.deepEqual(model.rangePerformance([100, null, 105, 110]), {
-    change: 10, percent: 10, direction: "up"
+    first: 100, change: 10, percent: 10, direction: "up"
   });
   assert.deepEqual(model.rangePerformance([{ value: 20 }, { close: 15 }]), {
-    change: -5, percent: -25, direction: "down"
+    first: 20, change: -5, percent: -25, direction: "down"
   });
   assert.deepEqual(model.rangePerformance([[1, 4], [2, 4]]), {
-    change: 0, percent: 0, direction: "flat"
+    first: 4, change: 0, percent: 0, direction: "flat"
   });
   assert.deepEqual(model.rangePerformance([0, 5]), {
-    change: 5, percent: null, direction: "up"
+    first: 0, change: 5, percent: null, direction: "up"
   });
 });
 
 test("reports unavailable range performance without two finite observations", () => {
-  const unavailable = { change: null, percent: null, direction: "unknown" };
+  const unavailable = { first: null, change: null, percent: null, direction: "unknown" };
   assert.deepEqual(model.rangePerformance(null), unavailable);
   assert.deepEqual(model.rangePerformance([]), unavailable);
   assert.deepEqual(model.rangePerformance([null, 5]), unavailable);

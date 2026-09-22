@@ -1,6 +1,17 @@
 # Changelog
 
-## 0.3.4 — Unreleased
+## 0.4.0 — Unreleased
+
+- Widen the panel and stack company names below symbols, with aligned price and
+  daily change; hide miniature charts on narrow screens to preserve readable rows.
+- Move range controls beside the selected chart and enlarge its price and plot.
+- Separate changes versus previous close from returns since the first plotted
+  price, and use the same starting-price baseline for the chart and its return.
+- Show a loading/unavailable state instead of presenting daily data as another range.
+- Keep the provider footer inside a reserved area beneath the scrollable content,
+  and remove the duplicate quote refresh timestamp.
+
+## 0.3.4 — 2026-09-22
 
 - Isolate the Python quote/history helper from inherited startup hooks, search
   paths and environment variables.
