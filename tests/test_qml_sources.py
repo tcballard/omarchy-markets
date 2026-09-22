@@ -116,13 +116,13 @@ class QmlSourceContractTests(unittest.TestCase):
         self.assertEqual(defaults["tickerWidth"], 220)
         source = (ROOT / "Panel.qml").read_text(encoding="utf-8")
         self.assertIn("id: marketToolbar", source)
-        self.assertIn("readonly property int rowHeight: Style.space(44)", source)
+        self.assertIn("readonly property int rowHeight: Style.space(56)", source)
         self.assertIn("PanelSeparator { foreground: root.foreground }", source)
 
     def test_panel_fits_host_insets_and_scrolls_overflow(self) -> None:
         source = (ROOT / "Panel.qml").read_text(encoding="utf-8")
         self.assertIn("centerOnBar: false", source)
-        self.assertIn("contentHeight: panel.fittedContentHeight(contentColumn.implicitHeight)", source)
+        self.assertIn("contentHeight: panel.fittedContentHeight(contentColumn.implicitHeight + footerReserve)", source)
         self.assertIn("ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }", source)
         self.assertIn("interactive: contentHeight > height", source)
         self.assertIn("clip: true", source)
