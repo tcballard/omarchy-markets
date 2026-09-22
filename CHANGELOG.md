@@ -2,6 +2,9 @@
 
 ## 0.4.0 — Unreleased
 
+- Collapse chart details for a compact watchlist with Show/Hide chart or D;
+  remember the choice until the plugin reloads. Left/Right opens the chart.
+
 - Widen the panel and stack company names below symbols, with aligned price and
   daily change; hide miniature charts on narrow screens to preserve readable rows.
 - Move range controls beside the selected chart and enlarge its price and plot.

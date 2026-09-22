@@ -99,7 +99,8 @@ membership can drift, so it should never be treated as an endorsement.
 | Click **Pin to bar** | Make the inspected instrument primary |
 | Click **Manage** | Add, remove, or reorder the watchlist |
 | Up/Down or J/K | Move through profiles, manager rows, or the watchlist |
-| Left/Right | Change the selected chart range |
+| Left/Right | Expand the chart and change its range |
+| D | Show or hide the selected chart and statistics |
 | Enter/Space | Choose the highlighted profile, focus custom entry, or inspect |
 | P | Pin the highlighted instrument to the bar |
 | R | Refresh now |
@@ -266,3 +267,8 @@ hardening.
 The marketplace badge uses the Omarchy icon from
 [omarchy-badges](https://github.com/tcballard/omarchy-badges), with attribution in
 [badge credits](assets/CREDITS.md).
+
+Chart details can be collapsed using **Hide chart** below the watchlist and
+restored with **Show chart** or **D**. The choice survives closing and reopening
+the panel until the plugin reloads. Selecting rows while collapsed keeps the
+chart closed and avoids requesting their history; the bar quote poller continues.
