@@ -29,7 +29,8 @@
   widget is present in the bar. Removal cancels requests and timers even though
   Omarchy keeps first-party services loadable.
 - External command: the trusted system interpreter `/usr/bin/python3` runs the
-  bundled standard-library helper with argument arrays. The inherited `PATH`
+  bundled standard-library helper with `-I -S` and argument arrays, a cleared
+  environment and a fixed UTF-8 locale. The inherited `PATH`
   is never used for interpreter resolution. There is no shell interpolation, package
   manager, install hook, daemon, credential access, telemetry, or privilege.
 - Provider boundary: the helper is the sole Yahoo adapter. It emits a bounded,
@@ -42,6 +43,9 @@
 - Cache: regenerated provider results may be stored atomically under the user's
   XDG cache directory with owner-only permissions. Cache entries are bounded,
   expire, never contain credentials, and are displayed explicitly as stale.
+  The quote file is capped at 2 MiB; history files share a 60-file / 8 MiB budget
+  under a nonblocking directory lock. Cache reads validate opened file identity
+  without blocking on FIFOs, and skip unsafe or permissive storage.
 - Refresh policy: 300–3600 seconds while an instrument is trading or
   continuous, at least 15 minutes in pre/post sessions, at least one hour when
   all instruments are closed, plus exponential failure backoff. Manual refresh

@@ -119,11 +119,13 @@ class QmlSourceContractTests(unittest.TestCase):
         self.assertIn("readonly property int rowHeight: Style.space(44)", source)
         self.assertIn("PanelSeparator { foreground: root.foreground }", source)
 
-    def test_panel_is_anchored_square_keyboard_first_and_scrollbar_free(self) -> None:
+    def test_panel_fits_host_insets_and_scrolls_overflow(self) -> None:
         source = (ROOT / "Panel.qml").read_text(encoding="utf-8")
         self.assertIn("centerOnBar: false", source)
-        self.assertIn("contentHeight: contentColumn.implicitHeight", source)
-        self.assertNotIn("ScrollBar.vertical", source)
+        self.assertIn("contentHeight: panel.fittedContentHeight(contentColumn.implicitHeight)", source)
+        self.assertIn("ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }", source)
+        self.assertIn("interactive: contentHeight > height", source)
+        self.assertIn("clip: true", source)
         self.assertIn("Qt.callLater(function() { keyCatcher.forceActiveFocus() })", source)
         self.assertIn('text: "STARTING PROFILES"', source)
         self.assertIn('text: "▲"', source)

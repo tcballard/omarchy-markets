@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.3.4 — Unreleased
+
+- Isolate the Python quote/history helper from inherited startup hooks, search
+  paths and environment variables.
+- Reject blocking special files, unsafe ownership, hard links and permissive
+  cache reads; keep writes atomic in private directories.
+- Limit history storage to 60 files and 8 MiB, pruning expired entries and
+  abandoned writes under a nonblocking directory lock.
+- Fit the panel to host padding, borders and available screen height; clip and
+  scroll overflow, reveal keyboard-selected profiles and improve muted text.
+- Preserve v0.3.3 settings and cache formats with upgrade regression fixtures.
+- Refresh the README with a centred title, one Plugin badge and linked reference.
+- Stage releases on merge; require exact-source host acceptance before tagging
+  and publication, and include that record in the verified release assets.
+
 ## 0.3.3 - 2026-09-17
 
 - Fix permanent loading for third-party installs by looking up the quote service

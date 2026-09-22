@@ -22,6 +22,7 @@ import datetime as dt
 import json
 import math
 import os
+import fcntl
 import pathlib
 import re
 import secrets
@@ -56,6 +57,9 @@ MAX_SPARKLINE_POINTS = 78
 MAX_RESPONSE_BYTES = 1_048_576
 MAX_CACHE_BYTES = 2_097_152
 MAX_CACHE_ENTRIES = MAX_SYMBOLS * 5
+MAX_HISTORY_FILES = MAX_SYMBOLS * 5
+MAX_HISTORY_BYTES = 8 * 1_048_576
+MAX_HISTORY_SCAN_ENTRIES = 4096
 CACHE_SCHEMA_VERSION = 1
 CACHE_1D_MAX_AGE_SECONDS = 7 * 24 * 60 * 60
 CACHE_HISTORY_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
@@ -78,6 +82,10 @@ SESSION_STATES = frozenset(
 
 _SYMBOL_RE = re.compile(r"^[A-Z0-9.^=_+\-]+$")
 _ERROR_CODE_RE = re.compile(r"[^a-z0-9_]+")
+_HISTORY_FILE_RE = re.compile(r"[A-Z0-9.^=_+\-]{1,32}-(?:5d|1mo|6mo|1y)-v1\.json\Z")
+_HISTORY_TEMP_RE = re.compile(
+    r"\.[A-Z0-9.^=_+\-]{1,32}-(?:5d|1mo|6mo|1y)-v1\.json\.[0-9]+\.[0-9a-f]{16}\.tmp\Z"
+)
 
 
 class InputLimitError(ValueError):
@@ -643,8 +651,18 @@ def _open_cache_parent_fd(path: pathlib.Path, *, create: bool) -> int:
                 next_descriptor = os.open(
                     component, directory_flags, dir_fd=descriptor
                 )
+            metadata = os.fstat(next_descriptor)
+            # Shared sticky ancestors such as /tmp are acceptable, but the
+            # actual cache directory below them must be private and ours.
+            if (metadata.st_uid not in (0, os.getuid()) or
+                    (metadata.st_mode & 0o022 and not metadata.st_mode & stat.S_ISVTX)):
+                os.close(next_descriptor)
+                raise FetchFailure("cache_unsafe", "The cache ancestor is not trusted.")
             os.close(descriptor)
             descriptor = next_descriptor
+        metadata = os.fstat(descriptor)
+        if metadata.st_uid != os.getuid() or stat.S_IMODE(metadata.st_mode) != 0o700:
+            raise FetchFailure("cache_unsafe", "The cache directory must be private (0700).")
         return descriptor
     except BaseException:
         os.close(descriptor)
@@ -667,6 +685,7 @@ def _read_cache_bytes(path: pathlib.Path) -> bytes | None:
             os.O_RDONLY
             | getattr(os, "O_CLOEXEC", 0)
             | getattr(os, "O_NOFOLLOW", 0)
+            | os.O_NONBLOCK
         )
         try:
             file_fd = os.open(path.name, flags, dir_fd=parent_fd)
@@ -677,9 +696,10 @@ def _read_cache_bytes(path: pathlib.Path) -> bytes | None:
                 "cache_unsafe", "The cache file could not be opened safely."
             ) from None
         metadata = os.fstat(file_fd)
-        if not stat.S_ISREG(metadata.st_mode):
+        if (not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != os.getuid()
+                or stat.S_IMODE(metadata.st_mode) != 0o600 or metadata.st_nlink != 1):
             raise FetchFailure(
-                "cache_unsafe", "The cache destination is not a regular file."
+                "cache_unsafe", "The cache must be a private, owner-held regular file."
             )
         if metadata.st_size > MAX_CACHE_BYTES:
             raise FetchFailure(
@@ -820,6 +840,59 @@ def _pruned_cache_entries(
     return {key: entry for _, key, entry in retained[:MAX_CACHE_ENTRIES]}
 
 
+def _prune_history_cache(parent_fd: int, incoming_name: str, incoming_size: int) -> None:
+    """Reserve space while holding the directory lock; never follow entries.
+
+    Old versions used the same filenames without aggregate eviction. Read only
+    metadata, then evict expired/oldest owned files. Bound even the legacy scan;
+    an excessive or unsafe directory disables persistence, never fresh quotes.
+    """
+    now = time.time()
+    entries = []
+    with os.scandir(parent_fd) as scan:
+        for index, entry in enumerate(scan):
+            if index >= MAX_HISTORY_SCAN_ENTRIES:
+                raise FetchFailure("cache_too_large", "Too many history directory entries.")
+            if not (_HISTORY_FILE_RE.fullmatch(entry.name) or
+                    _HISTORY_TEMP_RE.fullmatch(entry.name)):
+                continue
+            metadata = entry.stat(follow_symlinks=False)
+            if (not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != os.getuid()
+                    or metadata.st_nlink != 1 or stat.S_IMODE(metadata.st_mode) != 0o600):
+                raise FetchFailure("cache_unsafe", "Unsafe history cache entry.")
+            entries.append((metadata.st_mtime, entry.name, metadata.st_size))
+
+    retained = []
+    for modified, name, size in entries:
+        # No writer can own a temporary file while we hold this directory lock.
+        # Clear abandoned writes, including those left by a terminated helper.
+        if _HISTORY_TEMP_RE.fullmatch(name) or now - modified > CACHE_HISTORY_MAX_AGE_SECONDS:
+            os.unlink(name, dir_fd=parent_fd)
+        else:
+            retained.append((modified, name, size))
+
+    # Include the old target plus the temporary replacement in the byte budget.
+    # For the entry count reserve one only when this is a new symbol/range.
+    total = sum(size for _, _, size in retained) + incoming_size
+    count = len(retained) + (not any(name == incoming_name for _, name, _ in retained))
+    for _, name, size in sorted(retained):
+        if total <= MAX_HISTORY_BYTES and count <= MAX_HISTORY_FILES:
+            break
+        os.unlink(name, dir_fd=parent_fd)
+        total -= size
+        if name != incoming_name:
+            count -= 1
+    if total > MAX_HISTORY_BYTES or count > MAX_HISTORY_FILES:
+        raise FetchFailure("cache_too_large", "History cache budget exhausted.")
+
+
+def _replaceable_cache(metadata: os.stat_result | None) -> bool:
+    # Older permissive files may be replaced atomically with private data, but
+    # never read as a fallback. Hard links and files owned by others are refused.
+    return metadata is None or (stat.S_ISREG(metadata.st_mode)
+        and metadata.st_uid == os.getuid() and metadata.st_nlink == 1)
+
+
 def _write_cache_bytes(path: pathlib.Path, data: bytes) -> None:
     if len(data) > MAX_CACHE_BYTES:
         raise FetchFailure("cache_too_large", "The cache data exceeded the size limit.")
@@ -833,11 +906,17 @@ def _write_cache_bytes(path: pathlib.Path, data: bytes) -> None:
     temporary_name = f".{path.name}.{os.getpid()}.{secrets.token_hex(8)}.tmp"
     temporary_fd: int | None = None
     try:
+        # A nonblocking lock on the retained directory descriptor serializes
+        # writers and eviction without a mutable lock-file path. Busy caches
+        # are optional: return fresh data without waiting for another helper.
+        fcntl.flock(parent_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        if path.parent.name == "history" and _HISTORY_FILE_RE.fullmatch(path.name):
+            _prune_history_cache(parent_fd, path.name, len(data))
         try:
             target = os.stat(path.name, dir_fd=parent_fd, follow_symlinks=False)
         except FileNotFoundError:
             target = None
-        if target is not None and not stat.S_ISREG(target.st_mode):
+        if not _replaceable_cache(target):
             raise FetchFailure(
                 "cache_unsafe", "The cache destination is not a regular file."
             )
@@ -869,7 +948,7 @@ def _write_cache_bytes(path: pathlib.Path, data: bytes) -> None:
             target = os.stat(path.name, dir_fd=parent_fd, follow_symlinks=False)
         except FileNotFoundError:
             target = None
-        if target is not None and not stat.S_ISREG(target.st_mode):
+        if not _replaceable_cache(target):
             raise FetchFailure(
                 "cache_unsafe", "The cache destination is not a regular file."
             )

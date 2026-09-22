@@ -45,8 +45,11 @@ Panel {
   readonly property var rangeResult: MarketModel.rangePerformance(
     detailQuote && Array.isArray(detailQuote.sparkline) ? detailQuote.sparkline : [])
   readonly property var stats: MarketModel.statRows(detailQuote)
-  readonly property color foreground: bar ? bar.foreground : Color.popups.text
-  readonly property color dim: Color.muted
+  readonly property color foreground: Color.popups.text
+  // Muted is a global palette token, not a promise of readable popup text.
+  // Fall back to the popup's text role for low contrast or translucent themes.
+  readonly property color dim: popupBackground.a < 0.85 || Color.muted.a < 1
+    || contrastRatio(Color.muted, popupBackground) < 4.5 ? foreground : Color.muted
   readonly property color popupBackground: Color.popups.background
   readonly property string fontFamily: bar ? bar.fontFamily : Style.font.family
   readonly property color positiveBright: "#30d158"
@@ -146,6 +149,7 @@ Panel {
     managerMessage = ""
     syncSelection()
     root.controller.show()
+    panelScroll.contentY = 0
     Qt.callLater(function() { keyCatcher.forceActiveFocus() })
     if (service && typeof service.refreshIfStale === "function") service.refreshIfStale()
   }
@@ -180,6 +184,7 @@ Panel {
     if (setupRequired && !managing) {
       var setupCount = profiles.length + 1
       setupCursor = (setupCursor + delta + setupCount) % setupCount
+      Qt.callLater(root.revealSetupSelection)
       return
     }
     if (managing) {
@@ -221,9 +226,8 @@ Panel {
     requestFocusedHistory()
   }
 
-  function revealSelection() {
-    if (!panelScroll || !watchlist || selectedIndex < 0) return
-    var item = watchlist.itemAtIndex(selectedIndex)
+  function revealItem(item) {
+    if (!panelScroll) return
     if (!item) return
     var mapped = item.mapToItem(contentColumn, 0, 0)
     var top = mapped.y
@@ -237,20 +241,19 @@ Panel {
       panelScroll.contentY = Math.max(0, Math.min(bottom - panelScroll.height, maximum))
   }
 
+  function revealSetupSelection() {
+    revealItem(setupCursor < profiles.length
+      ? profileRepeater.itemAt(setupCursor) : startCustomButton)
+  }
+
+  function revealSelection() {
+    if (!watchlist || selectedIndex < 0) return
+    revealItem(watchlist.itemAtIndex(selectedIndex))
+  }
+
   function revealManagerSelection() {
-    if (!panelScroll || !managerRepeater || selectedIndex < 0) return
-    var item = managerRepeater.itemAt(selectedIndex)
-    if (!item) return
-    var mapped = item.mapToItem(contentColumn, 0, 0)
-    var top = mapped.y
-    var bottom = top + item.height
-    var viewportTop = panelScroll.contentY
-    var viewportBottom = viewportTop + panelScroll.height
-    var maximum = Math.max(0, panelScroll.contentHeight - panelScroll.height)
-    if (top < viewportTop)
-      panelScroll.contentY = Math.max(0, Math.min(top, maximum))
-    else if (bottom > viewportBottom)
-      panelScroll.contentY = Math.max(0, Math.min(bottom - panelScroll.height, maximum))
+    if (!managerRepeater || selectedIndex < 0) return
+    revealItem(managerRepeater.itemAt(selectedIndex))
   }
 
   function inspectSymbol(symbol, index) {
@@ -393,6 +396,9 @@ Panel {
       Qt.callLater(root.requestFocusedHistory)
   }
 
+  onManagingChanged: if (panelScroll) panelScroll.contentY = 0
+  onSetupRequiredChanged: if (panelScroll) panelScroll.contentY = 0
+
   KeyboardPanel {
     id: panel
     anchorItem: root.anchorItem
@@ -402,7 +408,7 @@ Panel {
     centerOnBar: false
     focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(Style.space(500))
-    contentHeight: contentColumn.implicitHeight
+    contentHeight: panel.fittedContentHeight(contentColumn.implicitHeight)
 
     PanelKeyCatcher {
       id: keyCatcher
@@ -441,14 +447,20 @@ Panel {
         anchors.fill: parent
         contentWidth: width
         contentHeight: contentColumn.implicitHeight
-        clip: false
+        clip: true
         boundsBehavior: Flickable.StopAtBounds
         flickableDirection: Flickable.VerticalFlick
-        interactive: false
+        interactive: contentHeight > height
+        ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+
+        onContentHeightChanged: contentY = Math.max(0, Math.min(contentY, contentHeight - height))
+        onHeightChanged: contentY = Math.max(0, Math.min(contentY, contentHeight - height))
 
         Column {
           id: contentColumn
-          width: panelScroll.width
+          // Keep a stable gutter: content height must not change its own width
+          // through scrollbar visibility and trigger a wrapping/height loop.
+          width: Math.max(0, panelScroll.width - Style.space(12))
           spacing: Style.space(12)
 
           Row {
@@ -605,6 +617,7 @@ Panel {
             }
 
             Repeater {
+              id: profileRepeater
               model: root.profiles
 
               delegate: BorderSurface {

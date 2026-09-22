@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import re
 import subprocess
+from host_evidence import validate as validate_host_evidence
 
 
 def git(*args):
@@ -33,7 +34,7 @@ def write_json(path, value):
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n")
 
 
-def build(directory):
+def build(directory, host_evidence=None):
     version, source = identity()
     directory.mkdir(parents=True, exist_ok=False)
     archive = directory / f"omarchy-markets-{version}.tar.gz"
@@ -66,11 +67,15 @@ def build(directory):
             "comment": "Source package only. External runtime requirements: Omarchy Quattro, Python 3.10+ standard library. Yahoo Finance is an external data service."}],
         "relationships": [{"spdxElementId": "SPDXRef-DOCUMENT", "relationshipType": "DESCRIBES",
                            "relatedSpdxElement": "SPDXRef-Package"}]})
+    documents = ["SOURCE-MANIFEST.json", "SBOM.spdx.json"]
+    if host_evidence is not None:
+        record = validate_host_evidence(json.loads(host_evidence.read_text()), source["commit"])
+        write_json(directory / "HOST-ACCEPTANCE.json", record)
+        documents.append("HOST-ACCEPTANCE.json")
     write_json(directory / "RELEASE-MANIFEST.json", {
         "schemaVersion": 1, "version": version, "source": source,
         "artifacts": [describe(archive)],
-        "releaseDocuments": [describe(directory / name) for name in
-                             ("SOURCE-MANIFEST.json", "SBOM.spdx.json")]})
+        "releaseDocuments": [describe(directory / name) for name in documents]})
     (directory / "SHA256SUMS").write_text("".join(
         f"{describe(path)['sha256']}  {path.name}\n" for path in sorted(directory.iterdir())))
     verify(directory)
@@ -83,6 +88,8 @@ def verify(directory):
     for document in (release, manifest):
         if document["schemaVersion"] != 1 or document["source"] != source or document["version"] != version:
             raise ValueError("Release source identity mismatch")
+    if (directory / "HOST-ACCEPTANCE.json").exists():
+        validate_host_evidence(json.loads((directory / "HOST-ACCEPTANCE.json").read_text()), source["commit"])
     entries = release["artifacts"] + release["releaseDocuments"]
     names = {entry["name"] for entry in entries}
     if len(names) != len(entries) or any(Path(n).name != n for n in names):
@@ -107,5 +114,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=("build", "verify"))
     parser.add_argument("directory", type=Path)
+    parser.add_argument("--host-evidence", type=Path)
     args = parser.parse_args()
-    (build if args.action == "build" else verify)(args.directory)
+    if args.action == "build":
+        build(args.directory, args.host_evidence)
+    else:
+        verify(args.directory)
