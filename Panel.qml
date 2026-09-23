@@ -19,6 +19,7 @@ Panel {
   property int setupCursor: 0
   property bool keyboardCursor: false
   property bool managing: false
+  property bool detailsExpanded: true
   property string managerMessage: ""
   property double nowMs: Date.now()
 
@@ -207,6 +208,7 @@ Panel {
 
   function moveRange(delta) {
     if (setupRequired || managing || focusedSymbol === "") return
+    detailsExpanded = true
     var options = MarketModel.rangeOptions()
     var index = 0
     for (var cursor = 0; cursor < options.length; cursor += 1) {
@@ -267,9 +269,16 @@ Panel {
   }
 
   function requestFocusedHistory() {
-    if (focusedSymbol === "" || !dataEnabled) return
+    if (!detailsExpanded || focusedSymbol === "" || !dataEnabled) return
     if (service && typeof service.requestHistory === "function")
       service.requestHistory(focusedSymbol, selectedRange)
+  }
+
+  function toggleDetails() {
+    detailsExpanded = !detailsExpanded
+    if (detailsExpanded) requestFocusedHistory()
+    else panelScroll.contentY = 0
+    Qt.callLater(function() { keyCatcher.forceActiveFocus() })
   }
 
   function pinFocused() {
@@ -441,7 +450,8 @@ Panel {
           else if (text === "c" || text === "C") root.startCustom()
           return
         }
-        if (text === "r" || text === "R") root.refresh()
+        if (text === "d" || text === "D") root.toggleDetails()
+        else if (text === "r" || text === "R") root.refresh()
         else if (text === "o" || text === "O") root.openFocusedQuote()
         else if (text === "p" || text === "P") root.pinFocused()
         else if (text === "m" || text === "M") root.managing = true
@@ -1145,8 +1155,24 @@ Panel {
 
             PanelSeparator { foreground: root.foreground }
 
+            Button {
+              width: parent.width
+              text: (root.detailsExpanded ? "▾ Hide chart" : "▸ Show chart")
+                + (root.focusedSymbol ? " · " + root.focusedSymbol : "")
+              foreground: root.foreground
+              horizontalPadding: Style.space(8)
+              verticalPadding: Style.space(8)
+              tooltipText: "Show or hide chart details (D)"
+              Accessible.role: Accessible.Button
+              Accessible.name: (root.detailsExpanded ? "Hide" : "Show")
+                + " chart and statistics for " + root.focusedSymbol
+              Accessible.onPressAction: root.toggleDetails()
+              onClicked: root.toggleDetails()
+            }
+
             BorderSurface {
               id: detailCard
+              visible: root.detailsExpanded
               width: parent.width
               implicitHeight: detailContent.implicitHeight + contentTopInset + contentBottomInset
               height: implicitHeight

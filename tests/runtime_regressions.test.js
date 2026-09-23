@@ -97,3 +97,20 @@ assert.deepEqual(JSON.parse(JSON.stringify(paused)), {...previous, tickerPaused:
 const disabled = {...previous, dataEnabled: false};
 assert.equal(settings.normalizedSettingsPatch({}, disabled).dataEnabled, false);
 console.log("Helper isolation, popup contrast, keyboard scrolling and v0.3.3 settings regressions passed.");
+
+const detailState = functions(panel, ["toggleDetails", "requestFocusedHistory"], {
+  detailsExpanded: true, focusedSymbol: "ACME", dataEnabled: true, selectedRange: "1mo",
+  panelScroll: {contentY: 250}, Qt: {callLater: callback => callback()},
+  keyCatcher: {forceActiveFocus() {}},
+  service: {calls: [], requestHistory(symbol, range) { this.calls.push([symbol, range]); }},
+});
+detailState.toggleDetails();
+assert.equal(detailState.detailsExpanded, false);
+assert.equal(detailState.panelScroll.contentY, 0);
+detailState.requestFocusedHistory();
+assert.equal(detailState.service.calls.length, 0, "collapsed selection does not request history");
+detailState.focusedSymbol = "OTHER";
+detailState.toggleDetails();
+assert.equal(detailState.detailsExpanded, true);
+assert.deepEqual(detailState.service.calls, [["OTHER", "1mo"]], "expanding loads the current selection");
+console.log("Chart collapse and expansion regressions passed.");
