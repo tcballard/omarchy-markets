@@ -26,13 +26,30 @@ verified.
 Record the date, plugin SHA, Omarchy SHA, monitor/scaling details, commands,
 screenshots, and failures. A generated preview is not live-shell evidence.
 
-## v0.4.0 UX refresh — pending host acceptance
+## Capture record: 22 September 2026
+
+- `preview.png`: screenshot supplied by Tom after testing the collapsible-chart
+  candidate `5fb5068f9bdcdba7f3a55560d2de7641ece33cf4` (v0.4.0).
+- Shows the live Markets panel on his XPS: AI & Semiconductors watchlist,
+  NVDA selected, 5D range, expanded chart and the Hide chart control.
+- The supplied PNG is preserved byte-for-byte, including its desktop framing.
+  No generation, retouching, cropping or resizing was performed here.
+- Tom confirmed the preceding layout checks and subsequently reported that
+  the collapsible-chart build “all works nicely”. This is user-reported host
+  acceptance; the screenshot alone does not demonstrate every interaction.
+- `preview-profiles.png` remains the historical v0.3.2 capture below.
+
+## v0.4.0 UX refresh — user-reported host acceptance
 
 The 22 September XPS screenshot supplied by Tom prompted a wider watchlist,
 clearer chart comparisons, chart-local range controls and an inset footer.
-The screenshot is evidence for the preceding UI, not the refreshed build.
+Tom subsequently confirmed the refreshed layout worked, then tested the
+collapsible-chart candidate `5fb5068f9bdcdba7f3a55560d2de7641ece33cf4` and
+reported that it “all works nicely”. The new main preview shows that build.
+These are user-reported results on the XPS; no additional live testing was
+performed in this development environment.
 
-Before publishing the exact merged v0.4.0 candidate, check:
+The requested UX checks for that host pass were:
 
 - Eight- and twelve-symbol watchlists: company names, prices and daily changes
   stay inside each row, including long symbols and large currency values.
@@ -45,8 +62,10 @@ Before publishing the exact merged v0.4.0 candidate, check:
 - Keyboard selection remains visible; range arrows, Manage, setup, pinning,
   Escape, outside click and panel switching still work in light/dark themes.
 
-The v0.3.4 host pass does not cover this new layout. All required checks from
-[the release guide](releasing.md) still apply to the new release.
+The runtime source remains identical to the accepted collapsible-chart
+candidate; this follow-up changes only screenshots and documentation.
+Publication must record the final merged SHA and the scope of this user
+acceptance. Unobserved matrix rows above are not newly claimed as passed.
 
 ## v0.3.4 publication — 22 September 2026
 
@@ -87,7 +106,7 @@ unclaimed until observed separately.
 - Omarchy: development revision `4ee6d4eeea176b0bf4014ce8b82a148a9433efff`.
 - Display: Sharp eDP-1, 1920 × 1200, scale 1.25, approximately 60 Hz.
 - Theme: `matte-black`; horizontal top bar.
-- `preview.png`: actual running panel and ticker, AI & Semiconductors watchlist,
+- Original `preview.png` (replaced on 22 September): actual running panel and ticker, AI & Semiconductors watchlist,
   NVDA selected, 1D range, public Yahoo Finance data with market-closed status.
 - `preview-profiles.png`: actual profile chooser with market data temporarily
   paused; the existing watchlist was retained. This is the setup surface, not

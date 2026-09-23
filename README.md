@@ -52,9 +52,9 @@ Quotes come from Yahoo Finance's unofficial endpoint and may be delayed or
 unavailable. Last-known values are labelled when stale. This is an
 informational market view, with no trading or portfolio tools.
 
-The screenshots are real Omarchy captures of v0.3.2. See the
-[capture record](docs/acceptance.md#capture-record-12-september-2026) for their
-source and the [changelog](CHANGELOG.md) for subsequent changes.
+The main preview shows v0.4.0 running on Tom’s XPS; the profile chooser
+capture is from v0.3.2. See the [capture records](docs/acceptance.md) for
+their source and the [changelog](CHANGELOG.md) for changes.
 
 ## Update or remove
 
