@@ -750,13 +750,17 @@ Panel {
               font.pixelSize: Style.font.body
             }
 
-            Row {
+            Item {
+              id: symbolEntry
               width: parent.width
-              spacing: Style.space(8)
+              height: Style.space(40)
 
               BorderSurface {
-                width: parent.width - addButton.width - parent.spacing
-                height: Math.max(Style.space(40), addButton.height)
+                id: symbolField
+                x: 0
+                y: 0
+                width: parent.width - addControl.width - Style.space(8)
+                height: parent.height
                 radius: 0
                 color: Style.normalFillFor(root.foreground, Color.accent, Color.urgent)
                 borderSpec: Border.controlSpec(symbolInput.activeFocus ? "focus" : "normal",
@@ -800,15 +804,39 @@ Panel {
                 }
               }
 
-              Button {
-                id: addButton
-                text: "Add"
-                foreground: root.foreground
-                bordered: true
+              BorderSurface {
+                id: addControl
+                x: parent.width - width
+                y: 0
+                width: addLabel.implicitWidth + Style.spacing.controlPaddingX * 2
+                height: parent.height
+                radius: 0
+                color: addMouse.containsMouse
+                  ? Style.hoverFillFor(root.foreground, Color.accent, Color.urgent)
+                  : Style.normalFillFor(root.foreground, Color.accent, Color.urgent)
+                borderSpec: Border.controlSpec(addMouse.containsMouse ? "hover-cursor" : "normal",
+                  root.foreground, Color.accent)
                 Accessible.role: Accessible.Button
                 Accessible.name: "Add symbol to watchlist"
                 Accessible.onPressAction: root.addEnteredSymbol()
-                onClicked: root.addEnteredSymbol()
+
+                Text {
+                  id: addLabel
+                  anchors.centerIn: parent
+                  textFormat: Text.PlainText
+                  text: "Add"
+                  color: root.foreground
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.body
+                }
+
+                MouseArea {
+                  id: addMouse
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: root.addEnteredSymbol()
+                }
               }
             }
 
