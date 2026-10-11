@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import Quickshell
 import qs.Commons
+import qs.Commons as Omarchy
 import qs.Ui
 import "MarketModel.js" as MarketModel
 import "WatchlistModel.js" as WatchlistModel
@@ -60,12 +61,12 @@ Panel {
   readonly property var rangeResult: MarketModel.rangePerformance(
     chartQuote && Array.isArray(chartQuote.sparkline) ? chartQuote.sparkline : [])
   readonly property var stats: MarketModel.statRows(detailQuote)
-  readonly property color foreground: Color.popups.text
+  readonly property color foreground: Omarchy.Color.popups.text
   // Muted is a global palette token, not a promise of readable popup text.
   // Fall back to the popup's text role for low contrast or translucent themes.
-  readonly property color dim: popupBackground.a < 0.85 || Color.muted.a < 1
-    || contrastRatio(Color.muted, popupBackground) < 4.5 ? foreground : Color.muted
-  readonly property color popupBackground: Color.popups.background
+  readonly property color dim: popupBackground.a < 0.85 || Omarchy.Color.muted.a < 1
+    || contrastRatio(Omarchy.Color.muted, popupBackground) < 4.5 ? foreground : Omarchy.Color.muted
+  readonly property color popupBackground: Omarchy.Color.popups.background
   readonly property string fontFamily: bar ? bar.fontFamily : Style.font.family
   readonly property color positiveBright: "#30d158"
   readonly property color positiveDark: "#137333"
@@ -653,8 +654,8 @@ Panel {
               implicitHeight: setupIntro.implicitHeight + contentTopInset + contentBottomInset
               height: implicitHeight
               radius: Math.max(Style.cornerRadius, Style.space(16))
-              color: Style.normalFillFor(root.foreground, Color.accent, Color.urgent)
-              borderSpec: Border.controlSpec("normal", root.foreground, Color.accent)
+              color: Style.normalFillFor(root.foreground, Omarchy.Color.accent, Omarchy.Color.urgent)
+              borderSpec: Border.controlSpec("normal", root.foreground, Omarchy.Color.accent)
               padding: Style.space(16)
 
               Column {
@@ -701,12 +702,12 @@ Panel {
                 height: implicitHeight
                 radius: Math.max(Style.cornerRadius, Style.space(13))
                 color: root.setupCursor === index
-                  ? Style.selectedFillFor(root.foreground, Color.accent, Color.urgent)
+                  ? Style.selectedFillFor(root.foreground, Omarchy.Color.accent, Omarchy.Color.urgent)
                   : profileMouse.containsMouse
-                  ? Style.hoverFillFor(root.foreground, Color.accent, Color.urgent)
+                  ? Style.hoverFillFor(root.foreground, Omarchy.Color.accent, Omarchy.Color.urgent)
                   : "transparent"
                 borderSpec: Border.controlSpec(root.setupCursor === index ? "focus" : "normal",
-                  root.foreground, Color.accent)
+                  root.foreground, Omarchy.Color.accent)
                 padding: Style.space(12)
                 Accessible.role: Accessible.Button
                 Accessible.name: modelData.name + ". " + modelData.description
@@ -890,9 +891,9 @@ Panel {
                 width: parent.width - addButton.width - parent.spacing
                 height: symbolEntry.height
                 radius: 0
-                color: Style.normalFillFor(root.foreground, Color.accent, Color.urgent)
+                color: Style.normalFillFor(root.foreground, Omarchy.Color.accent, Omarchy.Color.urgent)
                 borderSpec: Border.controlSpec(symbolInput.activeFocus ? "focus" : "normal",
-                  root.foreground, Color.accent)
+                  root.foreground, Omarchy.Color.accent)
                 padding: Style.space(9)
 
                 TextInput {
@@ -902,7 +903,7 @@ Panel {
                   anchors.rightMargin: parent.contentRightInset
                   verticalAlignment: TextInput.AlignVCenter
                   color: root.foreground
-                  selectionColor: Color.accent
+                  selectionColor: Omarchy.Color.accent
                   selectedTextColor: root.popupBackground
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.body
@@ -970,10 +971,10 @@ Panel {
                 height: Style.space(48)
                 radius: 0
                 color: selected
-                  ? Style.selectedFillFor(root.foreground, Color.accent, Color.urgent)
+                  ? Style.selectedFillFor(root.foreground, Omarchy.Color.accent, Omarchy.Color.urgent)
                   : "transparent"
                 borderSpec: Border.controlSpec(selected ? "focus" : "normal",
-                  root.foreground, Color.accent)
+                  root.foreground, Omarchy.Color.accent)
 
                 Row {
                   anchors.fill: parent
@@ -1164,14 +1165,14 @@ Panel {
                 height: watchlist.rowHeight
                 radius: Style.cornerRadius
                 color: inspected
-                  ? Style.selectedFillFor(root.foreground, Color.accent, Color.urgent)
+                  ? Style.selectedFillFor(root.foreground, Omarchy.Color.accent, Omarchy.Color.urgent)
                   : rowMouse.containsMouse
-                    ? Style.hoverFillFor(root.foreground, Color.accent, Color.urgent)
+                    ? Style.hoverFillFor(root.foreground, Omarchy.Color.accent, Omarchy.Color.urgent)
                     : "transparent"
                 borderSpec: root.keyboardCursor && inspected
-                  ? Border.controlSpec("focus", root.foreground, Color.accent)
+                  ? Border.controlSpec("focus", root.foreground, Omarchy.Color.accent)
                   : inspected
-                    ? Border.controlSpec("selected", root.foreground, Color.accent)
+                    ? Border.controlSpec("selected", root.foreground, Omarchy.Color.accent)
                     : Border.none()
                 Accessible.role: Accessible.Button
                 Accessible.name: quote

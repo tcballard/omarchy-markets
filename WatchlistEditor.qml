@@ -1,12 +1,13 @@
 import QtQuick
 import qs.Commons
+import qs.Commons as Omarchy
 import qs.Ui
 
 // The panel keeps keyboard navigation; this scope owns text-entry/Tab focus.
 FocusScope {
   id: root
   property var hostWidget: null
-  property color foreground: Color.popups.text
+  property color foreground: Omarchy.Color.popups.text
   property string fontFamily: Style.font.family
   property string deleteCandidate: ""
   readonly property string activeId: hostWidget ? hostWidget.watchlistLibrary.activeId : ""
@@ -72,9 +73,9 @@ FocusScope {
       height: Math.max(Style.space(40), nameInput.implicitHeight + Style.space(18))
       padding: Style.space(9)
       radius: 0
-      color: Style.normalFillFor(root.foreground, Color.accent, Color.urgent)
+      color: Style.normalFillFor(root.foreground, Omarchy.Color.accent, Omarchy.Color.urgent)
       borderSpec: Border.controlSpec(nameInput.activeFocus ? "focus" : "normal",
-        root.foreground, Color.accent)
+        root.foreground, Omarchy.Color.accent)
 
       TextInput {
         id: nameInput
@@ -83,8 +84,8 @@ FocusScope {
         anchors.rightMargin: parent.contentRightInset
         verticalAlignment: TextInput.AlignVCenter
         color: root.foreground
-        selectionColor: Color.accent
-        selectedTextColor: Color.popups.background
+        selectionColor: Omarchy.Color.accent
+        selectedTextColor: Omarchy.Color.popups.background
         font.family: root.fontFamily
         font.pixelSize: Style.font.body
         maximumLength: 32

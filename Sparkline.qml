@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Commons
+import qs.Commons as Omarchy
 import "ChartModel.js" as ChartModel
 
 // Lightweight domain chart: a thin line and subtle area fill. Direction is
@@ -9,9 +10,9 @@ Canvas {
 
   property var points: []
   property var timestamps: []
-  property color lineColor: Color.accent
-  property color gridColor: Util.alpha(Color.muted, 0.20)
-  property color referenceColor: Util.alpha(Color.muted, 0.48)
+  property color lineColor: Omarchy.Color.accent
+  property color gridColor: Util.alpha(Omarchy.Color.muted, 0.20)
+  property color referenceColor: Util.alpha(Omarchy.Color.muted, 0.48)
   property real lineWidth: Math.max(1, Style.spaceReal(1.75))
   property bool showGrid: true
   property real referenceValue: NaN

@@ -9,6 +9,8 @@
   host stubs and exercises pointer/key input, focus and settings bindings.
 - Accept Qt-wrapped arrays when restoring named lists and chart data; avoid
   pausing a stopped ticker and plotting a missing previous close as zero.
+- Qualify Omarchy's theme colors to avoid collisions with Qt's Color type,
+  caught by the Qt 6.4 smoke run.
 - Keep up to eight named watchlists, create empty lists or copies, rename them,
   and confirm deletion. Edits save to the active list; switching restores its
   symbols, order and pinned quote without changing market-data consent.
