@@ -15,6 +15,19 @@ and `qml6-module-qttest`, then run the command.
 Set `QMLTESTRUNNER` if the Qt 6 runner is at a different path. CI has a dedicated
 `qml` job whose failures fail the Test workflow; portable checks remain runnable without Qt.
 
+The separate `qml-qt612` job runs the identical suite on pinned Qt 6.12.0,
+distributed by `PySide6-Essentials==6.12.0` and `shiboken6==6.12.0`.
+`pyside-runner` invokes Qt Quick Test directly and rejects an unexpected runtime
+version. Python is only the test launcher; it adds no plugin dependency.
+To reproduce in an environment with those packages installed:
+
+```bash
+EXPECTED_QT_VERSION=6.12.0 QMLTESTRUNNER=./tests/qml/pyside-runner ./tests/qml/run
+```
+
+Both jobs are required to pass the workflow. Qt 6.12's QtQuick Color singleton
+coexists with the host theme because production references use `Omarchy.Color`.
+
 The small `imports/` stubs expose only the Omarchy/Quickshell interfaces used by
 these components. They do not execute commands or contact a provider. Their
 public API shape was checked against Omarchy
