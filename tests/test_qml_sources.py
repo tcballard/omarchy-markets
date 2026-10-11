@@ -14,6 +14,7 @@ QML_FILES = [
     ROOT / "Service.qml",
     ROOT / "Sparkline.qml",
     ROOT / "WatchlistEditor.qml",
+    ROOT / "HistoryChart.qml",
 ]
 
 
@@ -202,7 +203,6 @@ class QmlSourceContractTests(unittest.TestCase):
 
     def test_panel_wires_time_aware_charts_and_keyboard_modes(self) -> None:
         panel_source = (ROOT / "Panel.qml").read_text(encoding="utf-8")
-        sparkline_source = (ROOT / "Sparkline.qml").read_text(encoding="utf-8")
         self.assertIn("sparklineTimestamps", panel_source)
         self.assertNotIn("quote.timestamps", panel_source)
         self.assertIn("blocked: symbolInput.activeFocus", panel_source)
@@ -215,7 +215,6 @@ class QmlSourceContractTests(unittest.TestCase):
             "Keys.onTabPressed",
         ]:
             self.assertIn(token, panel_source)
-        self.assertIn("minimum = Math.min(minimum, referenceValue)", sparkline_source)
 
 
 if __name__ == "__main__":

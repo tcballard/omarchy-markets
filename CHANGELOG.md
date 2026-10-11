@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Inspect loaded chart points with a pointer or keyboard, showing the sampled
+  price and UTC timestamp. I enters inspection; Left/Right, Home/End and Escape
+  navigate without changing the chart range or current quote.
+- Add an offscreen Qt Quick smoke job that loads the shipped UI against small
+  host stubs and exercises pointer/key input, focus and settings bindings.
+- Accept Qt-wrapped arrays when restoring named lists and chart data; avoid
+  pausing a stopped ticker and plotting a missing previous close as zero.
 - Keep up to eight named watchlists, create empty lists or copies, rename them,
   and confirm deletion. Edits save to the active list; switching restores its
   symbols, order and pinned quote without changing market-data consent.

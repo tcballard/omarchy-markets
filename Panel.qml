@@ -10,6 +10,7 @@ import "WatchlistModel.js" as WatchlistModel
 // navigation model; inspecting a row and pinning it to the bar are separate.
 Panel {
   id: root
+  objectName: "marketsPanel"
   moduleName: "io.github.tcballard.omarchy-markets"
   manageIpc: false
 
@@ -295,6 +296,17 @@ Panel {
     Qt.callLater(function() { keyCatcher.forceActiveFocus() })
   }
 
+  function inspectChart() {
+    if (setupRequired || managing) return
+    var wasExpanded = detailsExpanded
+    setDetailsExpanded(true)
+    Qt.callLater(function() {
+      if (!wasExpanded) root.requestFocusedHistory()
+      root.revealItem(historyChart)
+      historyChart.focusChart()
+    })
+  }
+
   function cycleSort() {
     var modes = ["saved", "gainers", "losers"]
     if (hostWidget) hostWidget.setSortMode(modes[(modes.indexOf(sortMode) + 1) % modes.length])
@@ -471,8 +483,9 @@ Panel {
 
     PanelKeyCatcher {
       id: keyCatcher
+      objectName: "panelKeys"
       anchors.fill: parent
-      blocked: symbolInput.activeFocus || watchlistEditor.activeFocus
+      blocked: symbolInput.activeFocus || watchlistEditor.activeFocus || historyChart.activeFocus
       onMoveRequested: function(dx, dy) {
         if (dx !== 0) root.moveRange(dx)
         if (dy !== 0) root.moveSelection(dy)
@@ -500,6 +513,7 @@ Panel {
           return
         }
         if (text === "d" || text === "D") root.toggleDetails()
+        else if (text === "i" || text === "I") root.inspectChart()
         else if (text === "s" || text === "S") root.cycleSort()
         else if (text === "r" || text === "R") root.refresh()
         else if (text === "o" || text === "O") root.openFocusedQuote()
@@ -1210,7 +1224,10 @@ Panel {
                     anchors.verticalCenter: parent.verticalCenter
                     points: quoteRow.quote ? quoteRow.quote.sparkline : []
                     timestamps: quoteRow.quote ? quoteRow.quote.sparklineTimestamps : []
-                    referenceValue: quoteRow.quote ? quoteRow.quote.previousClose : NaN
+                    referenceValue: {
+                      var value = quoteRow.quote ? MarketModel.finiteNumber(quoteRow.quote.previousClose) : null
+                      return value === null ? NaN : value
+                    }
                     lineColor: root.movementColorFor(quoteRow.quote)
                     referenceColor: root.dim
                     showGrid: false
@@ -1385,7 +1402,7 @@ Panel {
                   }
                 }
 
-                Row {
+                Flow {
                   id: marketToolbar
                   width: parent.width
                   spacing: Style.space(5)
@@ -1407,13 +1424,29 @@ Panel {
                       onClicked: root.chooseRange(rangeButton.modelData.id)
                     }
                   }
+
+                  Button {
+                    text: "Inspect chart"
+                    foreground: root.foreground
+                    enabled: historyChart.canInspect
+                    opacity: enabled ? 1 : 0.4
+                    horizontalPadding: Style.space(8)
+                    verticalPadding: Style.space(5)
+                    tooltipText: "Inspect prices with Left/Right, Home/End; Escape returns (I)"
+                    Accessible.role: Accessible.Button
+                    Accessible.name: "Inspect chart values"
+                    Accessible.onPressAction: root.inspectChart()
+                    onClicked: root.inspectChart()
+                  }
                 }
 
                 Item {
                   width: parent.width
-                  height: Style.space(160)
+                  height: historyChart.implicitHeight
 
-                  Sparkline {
+                  HistoryChart {
+                    id: historyChart
+                    objectName: "historyChart"
                     anchors.fill: parent
                     visible: root.rangeResult.direction !== "unknown"
                     points: root.chartQuote ? root.chartQuote.sparkline : []
@@ -1421,7 +1454,12 @@ Panel {
                     referenceValue: root.rangeResult.first === null ? NaN : root.rangeResult.first
                     lineColor: root.rangeMovementColor()
                     referenceColor: root.dim
-                    showGrid: true
+                    foreground: root.foreground
+                    fontFamily: root.fontFamily
+                    currency: root.chartQuote ? String(root.chartQuote.currency || "") : ""
+                    symbol: root.focusedSymbol
+                    seriesKey: root.focusedSymbol + ":" + root.selectedRange
+                    onReturnFocus: keyCatcher.forceActiveFocus()
                   }
 
                   Text {

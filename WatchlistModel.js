@@ -18,7 +18,7 @@ function snapshot(value) {
 }
 
 function normalizeLists(value) {
-  if (!Array.isArray(value)) return [];
+  if (!MarketModel.isArray(value)) return [];
   var lists = [];
   var ids = {};
   var names = {};
@@ -69,7 +69,7 @@ function libraryForSettings(settings) {
 }
 
 function saveActive(settings) {
-  if (!Array.isArray(settings.watchlists) || settings.watchlists.length === 0) return settings;
+  if (!MarketModel.isArray(settings.watchlists) || settings.watchlists.length === 0) return settings;
   var library = libraryForSettings(settings);
   if (library.activeId) settings.watchlists = library.lists;
   return settings;

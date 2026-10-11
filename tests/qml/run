@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+runner="${QMLTESTRUNNER:-/usr/lib/qt6/bin/qmltestrunner}"
+if [[ ! -x "$runner" ]]; then
+  printf 'Qt 6 qmltestrunner is required; see tests/qml/README.md.\n' >&2
+  exit 1
+fi
+runtime_dir="$(mktemp -d)"
+trap 'rm -rf "$runtime_dir"' EXIT
+status=0
+QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software XDG_RUNTIME_DIR="$runtime_dir" \
+  "$runner" -input "$repo_root/tests/qml" -import "$repo_root/tests/qml/imports" \
+  -o -,txt >"$runtime_dir/result.log" 2>&1 || status=$?
+cat "$runtime_dir/result.log"
+if [[ "$status" -ne 0 ]]; then exit "$status"; fi
+# Includes warnings emitted while components load, before init() installs failOnWarning.
+if grep -Eq '^(QWARN|QFATAL|FAIL!)|(^|[[:space:]])(TypeError|ReferenceError|SyntaxError):' "$runtime_dir/result.log"; then
+  exit 1
+fi

@@ -67,7 +67,9 @@ var RANGE_DEFINITIONS = [
 ];
 
 function isArray(value) {
-  return Object.prototype.toString.call(value) === "[object Array]";
+  // Qt can inject QVariantList sequences instead of native JavaScript arrays.
+  return Array.isArray(value) || (value !== null && typeof value === "object"
+    && typeof value.slice === "function" && Array.isArray(value.slice(0, 0)));
 }
 
 function hasOwn(object, key) {

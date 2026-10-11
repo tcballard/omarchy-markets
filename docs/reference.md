@@ -111,6 +111,19 @@ across restarts and apply to all your lists.
 In Manage, **N** focuses the name field. Enter saves a copy; Tab/Shift-Tab moves
 through its actions and Escape returns to panel navigation.
 
+### Inspect chart values
+
+Hover over the main chart to show a crosshair, the nearest sampled price and
+its UTC timestamp. The current quote and daily change above the chart continue
+to describe the latest quote. The readout uses already loaded history and
+does not interpolate prices or fetch additional detail.
+
+Choose **Inspect chart**, press **I**, or click a chart point to focus inspection.
+Left/Right steps through samples, Home/End jumps to the first/last sample, and
+Escape or Tab returns to panel navigation. Outside inspection, Left/Right
+still changes the chart range. Changing the series or its data clears the
+previous keyboard marker. Missing timestamps read **Time unavailable**.
+
 | Input | Action |
 | --- | --- |
 | Left-click the bar | Open or close Omarchy Markets |
@@ -122,6 +135,7 @@ through its actions and Escape returns to panel navigation.
 | Up/Down or J/K | Move through profiles, manager rows, or the watchlist |
 | Left/Right | Expand the chart and change its range |
 | D | Show or hide the selected chart and statistics |
+| I | Focus chart inspection; arrows step through points, Home/End jumps, Escape/Tab returns |
 | S | Cycle saved order, daily gainers and daily losers |
 | W | Switch to the next named watchlist |
 | Enter/Space | Choose the highlighted profile, focus custom entry, or inspect |
