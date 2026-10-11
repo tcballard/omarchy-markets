@@ -751,12 +751,14 @@ Panel {
             }
 
             Row {
+              id: symbolEntry
               width: parent.width
+              height: Math.max(Style.space(40), addButton.implicitHeight)
               spacing: Style.space(8)
 
               BorderSurface {
                 width: parent.width - addButton.width - parent.spacing
-                height: Math.max(Style.space(40), addButton.height)
+                height: symbolEntry.height
                 radius: 0
                 color: Style.normalFillFor(root.foreground, Color.accent, Color.urgent)
                 borderSpec: Border.controlSpec(symbolInput.activeFocus ? "focus" : "normal",
@@ -802,6 +804,7 @@ Panel {
 
               Button {
                 id: addButton
+                height: symbolEntry.height
                 text: "Add"
                 foreground: root.foreground
                 bordered: true
