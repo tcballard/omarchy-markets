@@ -26,6 +26,26 @@ verified.
 Record the date, plugin SHA, Omarchy SHA, monitor/scaling details, commands,
 screenshots, and failures. A generated preview is not live-shell evidence.
 
+## Watchlist-management candidate — 11 October 2026
+
+Live checks below are **unrun** in the development environment. No Omarchy/QML
+runtime is available there. Record the candidate SHA and host details when run.
+
+- Upgrade an existing custom list: symbols, order, pin, data consent, refresh
+  interval and ticker settings survive unchanged.
+- In Manage, create empty and copied lists; rename; reject duplicate names;
+  cancel deletion, then confirm it. Switch back and verify edits and pins.
+- Use N, Enter, Tab/Shift-Tab and Escape in the name editor; W switches lists;
+  existing add/reorder/remove shortcuts keep working.
+- Sort gainers/losers with S or the Order button. Refresh quotes and keep the
+  same selected instrument; Manage and the ticker retain the saved order.
+- Hide the chart, restart the shell and reopen: the active list, sort mode and
+  chart visibility return. Expanding the chart requests the selected history.
+- Pause data and switch lists: requests stay paused. Test with a second monitor
+  if available to verify host propagation and singleton polling.
+- Inspect manager/picker overflow at the intended scale, on a short viewport,
+  and with long list names in light and dark themes.
+
 ## Capture record: 22 September 2026
 
 - `preview.png`: screenshot supplied by Tom after testing the collapsible-chart

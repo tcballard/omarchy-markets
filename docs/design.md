@@ -25,6 +25,25 @@
 - Durable configuration: selected profile, symbols, pinned symbol, selected
   chart range, bar mode, ticker width/speed, refresh interval, and consent live
   inline on the widget entry in Omarchy's `shell.json`.
+- Watchlist-management candidate: up to eight named lists with unique names
+  of 1–32 characters. Each stores at most twelve symbols in saved order, its
+  pinned symbol and starting-profile ID. The active list mirrors the existing
+  flat `symbols`, `primarySymbol` and `profile` settings; older installs are
+  represented as one list without changing their symbols or consent. The first
+  named-list action persists that library, and later symbol/pin/profile edits
+  update only its active member. `watchlists` and `activeWatchlistId` stay inline
+  in `shell.json`; no private file, process or new endpoint is introduced.
+- `sortMode` and `chartVisible` are durable widget-wide preferences. Sorting
+  affects only the panel: ties retain saved order, missing changes sort last,
+  and selection follows symbol identity through refreshed rankings. The manager
+  and ticker retain saved order. Switching lists never enables paused data.
+- Candidate acceptance: legacy settings survive migration; copy/rename/switch/
+  delete preserve other lists; deletion requires confirmation and retains at
+  least one list; multiple monitors receive the host's updated inline settings;
+  keyboard and pointer actions work; sorting preserves the inspected symbol;
+  restart restores the active list, sorting and chart visibility. Portable
+  transition tests establish state behavior; live QML input/layout and host
+  propagation remain separate checks in `docs/acceptance.md`.
 - Process-wide state: one singleton owns quote polling, last-good merging,
   selected-symbol history requests, provider status, retry/backoff, and the
   bounded process lifecycle shared across monitors.

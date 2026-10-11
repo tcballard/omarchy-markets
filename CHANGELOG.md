@@ -1,6 +1,17 @@
 # Changelog
 
-## 0.4.0 — Unreleased
+## Unreleased
+
+- Keep up to eight named watchlists, create empty lists or copies, rename them,
+  and confirm deletion. Edits save to the active list; switching restores its
+  symbols, order and pinned quote without changing market-data consent.
+- Sort the panel by daily percentage gainers or losers without changing saved
+  order or the ticker. Keep the inspected symbol selected as prices reorder.
+- Remember chart visibility and sort preference across shell restarts.
+- Align the Add button with the symbol field using the shared Button.
+  Thanks to Shawn Yeager for the original fix in #11, included through #12.
+
+## 0.4.0 — 2026-09-23
 
 - Collapse chart details for a compact watchlist with Show/Hide chart or D;
   remember the choice until the plugin reloads. Left/Right opens the chart.

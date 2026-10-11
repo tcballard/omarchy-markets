@@ -13,6 +13,7 @@ QML_FILES = [
     ROOT / "Panel.qml",
     ROOT / "Service.qml",
     ROOT / "Sparkline.qml",
+    ROOT / "WatchlistEditor.qml",
 ]
 
 
@@ -130,7 +131,7 @@ class QmlSourceContractTests(unittest.TestCase):
         self.assertIn('text: "STARTING PROFILES"', source)
         self.assertIn('text: "▲"', source)
         self.assertIn('text: "▼"', source)
-        self.assertIn('text: "Keyboard: ↑/↓ select · [/] reorder · P pin · X/Delete remove · A add · M back"', source)
+        self.assertIn('text: "Keyboard: ↑/↓ select · [/] reorder · P pin · X/Delete remove · A add · N name · W next list · M back"', source)
 
     def test_widget_has_private_popout_contract(self) -> None:
         source = (ROOT / "BarWidget.qml").read_text(encoding="utf-8")
@@ -169,7 +170,7 @@ class QmlSourceContractTests(unittest.TestCase):
         for action in [
             "root.refresh()",
             "root.openFocusedQuote()",
-            "root.inspectSymbol(quoteRow.modelData, quoteRow.index)",
+            "root.inspectSymbol(quoteRow.modelData)",
             "root.pinFocused()",
             "root.startCustom()",
             "root.addEnteredSymbol()",

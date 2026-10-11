@@ -30,6 +30,11 @@ Start with **Markets**, **Magnificent 7**, **Crypto**, **Meme Coins**,
 then choose which one stays pinned in the bar. Profiles are editable starting
 points; the Meme Coins profile is labelled speculative.
 
+Keep up to eight named watchlists, with changes saved to the active list.
+Use **Manage** to create an empty list, save a copy, rename or delete it.
+Switch lists above the quotes, then choose saved order, gainers or losers.
+Your sort order and chart visibility are remembered after restarting the shell.
+
 - **Scan:** a scrolling ticker, or a compact single-symbol view.
 - **Explore:** five chart ranges, from one day to one year, with key statistics.
 - **Keep your place:** inspect another instrument without changing your pin.
