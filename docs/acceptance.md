@@ -29,7 +29,7 @@ screenshots, and failures. A generated preview is not live-shell evidence.
 
 ## Chart inspection candidate — 11 October 2026
 
-`tests/qml/run` passes locally with Qt Quick Test 6.4.2 and 6.8.3 using the
+`tests/qml/run` passes locally with Qt Quick Test 6.4.2, 6.8.3 and 6.12.0 using the
 software/offscreen backend: five behavior checks plus setup/cleanup on each,
 with no warnings or skips. The 6.4 run caught a Qt/Omarchy Color-name collision;
 production theme references now use an explicit Omarchy namespace.
@@ -38,6 +38,12 @@ time-spaced hover selection, missing data, keyboard bounds, focus return,
 unchanged range during inspection, normal range keys afterwards, and settings
 reactivity. GitHub's separate `qml` job runs the suite with Ubuntu 24.04's Qt 6
 packages; its log records the version and candidate SHA.
+The separate `qml-qt612` CI job pins Qt 6.12.0, asserts the runtime version and
+runs the same suite, including loading all shipped visual components with the
+real QtQuick Color singleton present. The Qt 6.12 local run passed all seven
+test phases without warnings, failures or skips; no further product changes
+were needed after qualifying the Omarchy theme namespace. This verifies the
+tested Markets UI paths on Qt 6.12, not the host's own Qt/Quickshell compatibility.
 
 Live host checks remain unrun for this candidate:
 

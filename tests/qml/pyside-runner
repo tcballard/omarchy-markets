@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# PySide distributes the real Qt Quick Test runtime; no application bindings are used.
+exec python3 - "$@" <<'PY'
+import os
+import sys
+from PySide6.QtCore import qVersion
+from PySide6.QtQuickTest import QUICK_TEST_MAIN
+
+expected = os.environ.get("EXPECTED_QT_VERSION")
+if expected and qVersion() != expected:
+    raise SystemExit(f"Expected Qt {expected}, found {qVersion()}")
+raise SystemExit(QUICK_TEST_MAIN("Markets", sys.argv))
+PY
