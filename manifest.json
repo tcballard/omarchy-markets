@@ -31,7 +31,9 @@
       "showPrice": true,
       "tickerWidth": 220,
       "tickerSpeed": 24,
-      "tickerPaused": false
+      "tickerPaused": false,
+      "sortMode": "saved",
+      "chartVisible": true
     },
     "schema": [
       {
@@ -112,6 +114,19 @@
         "type": "boolean",
         "label": "Pause ticker",
         "defaultValue": false
+      },
+      {
+        "key": "sortMode",
+        "type": "enum",
+        "label": "Watchlist order",
+        "options": ["saved", "gainers", "losers"],
+        "defaultValue": "saved"
+      },
+      {
+        "key": "chartVisible",
+        "type": "boolean",
+        "label": "Show chart details",
+        "defaultValue": true
       }
     ]
   }

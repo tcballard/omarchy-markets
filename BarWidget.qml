@@ -2,6 +2,7 @@ import QtQuick
 import qs.Commons
 import qs.Ui
 import "MarketModel.js" as MarketModel
+import "WatchlistModel.js" as WatchlistModel
 
 // The bar surface owns durable, per-instance settings and the private panel.
 // Quote polling remains process-wide in Service.qml.
@@ -42,6 +43,9 @@ BarWidget {
   readonly property int tickerWidth: boundedInteger(setting("tickerWidth", 220), 220, 160, 640)
   readonly property int tickerSpeed: boundedInteger(setting("tickerSpeed", 24), 24, 0, 80)
   readonly property bool tickerPaused: setting("tickerPaused", false) === true
+  readonly property bool chartVisible: setting("chartVisible", true) === true
+  readonly property string sortMode: WatchlistModel.normalizeSort(setting("sortMode", "saved"))
+  readonly property var watchlistLibrary: WatchlistModel.libraryForSettings(root.settings)
   readonly property int refreshInterval: boundedInteger(
     setting("refreshIntervalSec", setting("refreshInterval", 900)), 900, 300, 3600)
 
@@ -268,6 +272,10 @@ BarWidget {
     if (hasOwn(patch, "tickerSpeed"))
       entry.tickerSpeed = boundedInteger(patch.tickerSpeed, tickerSpeed, 0, 80)
     if (hasOwn(patch, "tickerPaused")) entry.tickerPaused = patch.tickerPaused === true
+    if (hasOwn(patch, "chartVisible")) entry.chartVisible = patch.chartVisible === true
+    if (hasOwn(patch, "sortMode")) entry.sortMode = WatchlistModel.normalizeSort(patch.sortMode)
+    if (hasOwn(patch, "watchlists")) entry.watchlists = WatchlistModel.normalizeLists(patch.watchlists)
+    if (hasOwn(patch, "activeWatchlistId")) entry.activeWatchlistId = String(patch.activeWatchlistId || "")
     if (hasOwn(patch, "refreshIntervalSec") || hasOwn(patch, "refreshInterval")) {
       var intervalValue = hasOwn(patch, "refreshIntervalSec")
         ? patch.refreshIntervalSec : patch.refreshInterval
@@ -281,7 +289,7 @@ BarWidget {
     entry.primarySymbol = finalPrimary.length > 0
       && finalSymbols.indexOf(finalPrimary[0]) >= 0
       ? finalPrimary[0] : (finalSymbols.length > 0 ? finalSymbols[0] : "")
-    return entry
+    return WatchlistModel.saveActive(entry)
   }
 
   function persistSettings(patch) {
@@ -377,6 +385,35 @@ BarWidget {
     var paused = pausedValue === true
     persistSettings({ tickerPaused: paused })
     return paused
+  }
+
+  function setChartVisible(visibleValue) {
+    persistSettings({ chartVisible: visibleValue === true })
+  }
+
+  function setSortMode(modeValue) {
+    persistSettings({ sortMode: WatchlistModel.normalizeSort(modeValue) })
+  }
+
+  function applyWatchlistResult(result) {
+    if (result.ok) persistSettings(result.patch)
+    return result
+  }
+
+  function createWatchlist(name, empty) {
+    return applyWatchlistResult(WatchlistModel.create(root.settings, name, empty))
+  }
+
+  function selectWatchlist(id) {
+    return applyWatchlistResult(WatchlistModel.select(root.settings, id))
+  }
+
+  function renameWatchlist(name) {
+    return applyWatchlistResult(WatchlistModel.rename(root.settings, name))
+  }
+
+  function deleteWatchlist(id) {
+    return applyWatchlistResult(WatchlistModel.remove(root.settings, id))
   }
 
   function configureService() {

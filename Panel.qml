@@ -4,6 +4,7 @@ import Quickshell
 import qs.Commons
 import qs.Ui
 import "MarketModel.js" as MarketModel
+import "WatchlistModel.js" as WatchlistModel
 
 // Private, bar-attached market surface. The watchlist remains the primary
 // navigation model; inspecting a row and pinning it to the bar are separate.
@@ -15,11 +16,11 @@ Panel {
   property var anchorItem: null
   property var hostWidget: null
   property var marketService: null
-  property int selectedIndex: 0
+  property string selectedSymbol: ""
   property int setupCursor: 0
   property bool keyboardCursor: false
   property bool managing: false
-  property bool detailsExpanded: true
+  readonly property bool detailsExpanded: hostWidget ? hostWidget.chartVisible : true
   property string managerMessage: ""
   property double nowMs: Date.now()
 
@@ -27,6 +28,14 @@ Panel {
   readonly property bool dataEnabled: hostWidget ? hostWidget.dataEnabled === true : false
   readonly property var symbols: hostWidget && Array.isArray(hostWidget.configuredSymbols)
     ? hostWidget.configuredSymbols : []
+  readonly property string sortMode: hostWidget ? hostWidget.sortMode : "saved"
+  readonly property var displaySymbols: WatchlistModel.sortSymbols(symbols, service.quotes, sortMode)
+  readonly property var watchlistLibrary: hostWidget ? hostWidget.watchlistLibrary
+    : ({ lists: [], activeId: "" })
+  readonly property string watchlistName: {
+    var index = WatchlistModel.indexOf(watchlistLibrary.lists, watchlistLibrary.activeId)
+    return index >= 0 ? watchlistLibrary.lists[index].name : "Current watchlist"
+  }
   readonly property string primarySymbol: hostWidget ? String(hostWidget.primarySymbol || "")
     : (symbols.length > 0 ? symbols[0] : "")
   readonly property string selectedRange: hostWidget
@@ -36,8 +45,9 @@ Panel {
   readonly property var profile: MarketModel.profileById(profileId)
   readonly property var profiles: MarketModel.profiles()
   readonly property bool setupRequired: !dataEnabled || symbols.length === 0
-  readonly property string focusedSymbol: symbols.length > 0
-    ? symbols[Math.max(0, Math.min(symbols.length - 1, selectedIndex))] : ""
+  readonly property string focusedSymbol: symbols.indexOf(selectedSymbol) >= 0
+    ? selectedSymbol : primarySymbol
+  readonly property int selectedIndex: symbols.indexOf(focusedSymbol)
   readonly property var focusedQuote: MarketModel.findQuote(service.quotes, focusedSymbol)
   readonly property bool historyMatches: service.historySymbol === focusedSymbol
     && service.historyRange === selectedRange
@@ -141,10 +151,8 @@ Panel {
   }
 
   function syncSelection() {
-    var index = symbols.indexOf(primarySymbol)
-    selectedIndex = index >= 0 ? index : 0
+    selectedSymbol = primarySymbol
     keyboardCursor = false
-    if (watchlist) watchlist.currentIndex = selectedIndex
     requestFocusedHistory()
   }
 
@@ -193,22 +201,22 @@ Panel {
     }
     if (managing) {
       if (symbols.length === 0) return
-      selectedIndex = (selectedIndex + delta + symbols.length) % symbols.length
+      selectedSymbol = symbols[(selectedIndex + delta + symbols.length) % symbols.length]
       keyboardCursor = true
       Qt.callLater(root.revealManagerSelection)
       return
     }
     if (symbols.length === 0) return
     keyboardCursor = true
-    selectedIndex = (selectedIndex + delta + symbols.length) % symbols.length
-    watchlist.currentIndex = selectedIndex
+    var index = displaySymbols.indexOf(focusedSymbol)
+    selectedSymbol = displaySymbols[(index + delta + displaySymbols.length) % displaySymbols.length]
     requestFocusedHistory()
     Qt.callLater(root.revealSelection)
   }
 
   function moveRange(delta) {
     if (setupRequired || managing || focusedSymbol === "") return
-    detailsExpanded = true
+    setDetailsExpanded(true)
     var options = MarketModel.rangeOptions()
     var index = 0
     for (var cursor = 0; cursor < options.length; cursor += 1) {
@@ -253,7 +261,7 @@ Panel {
 
   function revealSelection() {
     if (!watchlist || selectedIndex < 0) return
-    revealItem(watchlist.itemAtIndex(selectedIndex))
+    revealItem(watchlist.itemAtIndex(displaySymbols.indexOf(focusedSymbol)))
   }
 
   function revealManagerSelection() {
@@ -261,10 +269,9 @@ Panel {
     revealItem(managerRepeater.itemAt(selectedIndex))
   }
 
-  function inspectSymbol(symbol, index) {
-    selectedIndex = index
+  function inspectSymbol(symbol) {
+    selectedSymbol = symbol
     keyboardCursor = false
-    if (watchlist) watchlist.currentIndex = index
     requestFocusedHistory()
   }
 
@@ -274,11 +281,40 @@ Panel {
       service.requestHistory(focusedSymbol, selectedRange)
   }
 
+  function setDetailsExpanded(expanded) {
+    if (detailsExpanded !== expanded && hostWidget
+        && typeof hostWidget.setChartVisible === "function")
+      hostWidget.setChartVisible(expanded)
+  }
+
   function toggleDetails() {
-    detailsExpanded = !detailsExpanded
-    if (detailsExpanded) requestFocusedHistory()
+    var expanded = !detailsExpanded
+    setDetailsExpanded(expanded)
+    if (expanded) Qt.callLater(root.requestFocusedHistory)
     else panelScroll.contentY = 0
     Qt.callLater(function() { keyCatcher.forceActiveFocus() })
+  }
+
+  function cycleSort() {
+    var modes = ["saved", "gainers", "losers"]
+    if (hostWidget) hostWidget.setSortMode(modes[(modes.indexOf(sortMode) + 1) % modes.length])
+    Qt.callLater(root.revealSelection)
+  }
+
+  function handleWatchlistResult(result) {
+    managerMessage = result.message
+    if (result.ok) Qt.callLater(root.syncSelection)
+  }
+
+  function selectWatchlist(id) {
+    if (hostWidget) handleWatchlistResult(hostWidget.selectWatchlist(id))
+  }
+
+  function cycleWatchlist() {
+    var lists = watchlistLibrary.lists
+    if (lists.length < 2) return
+    var index = WatchlistModel.indexOf(lists, watchlistLibrary.activeId)
+    selectWatchlist(lists[(index + 1) % lists.length].id)
   }
 
   function pinFocused() {
@@ -323,9 +359,15 @@ Panel {
 
   function removeManagedSymbol(symbol) {
     if (!hostWidget || typeof hostWidget.removeSymbol !== "function") return
+    var previousIndex = selectedIndex
+    var inspected = focusedSymbol
     var result = hostWidget.removeSymbol(symbol)
     managerMessage = result.message
-    selectedIndex = Math.max(0, Math.min(selectedIndex, result.symbols.length - 1))
+    if (result.ok && result.changed) {
+      selectedSymbol = result.symbols.indexOf(inspected) >= 0 ? inspected
+        : (result.symbols[Math.max(0, Math.min(previousIndex, result.symbols.length - 1))] || "")
+      Qt.callLater(root.requestFocusedHistory)
+    }
   }
 
   function moveManagedSymbol(symbol, destination) {
@@ -334,14 +376,17 @@ Panel {
     var result = hostWidget.moveSymbol(symbol, destination)
     managerMessage = result.message
     if (result.ok && result.changed) {
-      var nextIndex = result.symbols.indexOf(inspected)
-      selectedIndex = nextIndex >= 0 ? nextIndex : 0
+      selectedSymbol = result.symbols.indexOf(inspected) >= 0 ? inspected : (result.symbols[0] || "")
       Qt.callLater(root.requestFocusedHistory)
     }
   }
 
   function managerShortcut(text) {
     if (text === "a" || text === "A") symbolInput.forceActiveFocus()
+    else if (text === "n" || text === "N") {
+      watchlistEditor.focusName()
+      Qt.callLater(function() { root.revealItem(watchlistEditor) })
+    }
     else if (text === "x" || text === "X") root.removeManagedSymbol(root.focusedSymbol)
     else if (text === "[") root.moveManagedSymbol(root.focusedSymbol, root.selectedIndex - 1)
     else if (text === "]") root.moveManagedSymbol(root.focusedSymbol, root.selectedIndex + 1)
@@ -427,7 +472,7 @@ Panel {
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
-      blocked: symbolInput.activeFocus
+      blocked: symbolInput.activeFocus || watchlistEditor.activeFocus
       onMoveRequested: function(dx, dy) {
         if (dx !== 0) root.moveRange(dx)
         if (dy !== 0) root.moveSelection(dy)
@@ -439,6 +484,10 @@ Panel {
       onCloseRequested: root.handleClose()
       onTabRequested: function(directionValue) { root.switchPanel(directionValue) }
       onTextKey: function(text) {
+        if (text === "w" || text === "W") {
+          root.cycleWatchlist()
+          return
+        }
         if (root.managing) {
           root.managerShortcut(text)
           return
@@ -451,6 +500,7 @@ Panel {
           return
         }
         if (text === "d" || text === "D") root.toggleDetails()
+        else if (text === "s" || text === "S") root.cycleSort()
         else if (text === "r" || text === "R") root.refresh()
         else if (text === "o" || text === "O") root.openFocusedQuote()
         else if (text === "p" || text === "P") root.pinFocused()
@@ -500,7 +550,7 @@ Panel {
               Text {
                 width: parent.width
                 textFormat: Text.PlainText
-                text: root.profile ? root.profile.name + " · " + root.stateLabel() : root.stateLabel()
+                text: root.watchlistName + " · " + root.stateLabel()
                 color: root.statusIsWarning() ? root.negativeColor : root.dim
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.caption
@@ -543,6 +593,39 @@ Panel {
                 onClicked: root.refresh()
               }
             }
+          }
+
+          Flow {
+            visible: root.watchlistLibrary.lists.length > 1
+            width: parent.width
+            spacing: Style.space(6)
+
+            Repeater {
+              model: root.watchlistLibrary.lists
+              Button {
+                required property var modelData
+                text: modelData.name.length > 18 ? modelData.name.slice(0, 17) + "…" : modelData.name
+                foreground: root.foreground
+                selected: modelData.id === root.watchlistLibrary.activeId
+                bordered: selected
+                tooltipText: modelData.name + " · " + modelData.symbols.length + " symbols (W: next list)"
+                Accessible.role: Accessible.Button
+                Accessible.name: "Switch to watchlist " + modelData.name
+                Accessible.onPressAction: root.selectWatchlist(modelData.id)
+                onClicked: root.selectWatchlist(modelData.id)
+              }
+            }
+          }
+
+          Text {
+            visible: !root.managing && root.managerMessage !== ""
+            width: parent.width
+            textFormat: Text.PlainText
+            wrapMode: Text.Wrap
+            text: root.managerMessage
+            color: root.dim
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.caption
           }
 
           Column {
@@ -693,6 +776,39 @@ Panel {
             visible: root.managing
             width: parent.width
             spacing: Style.space(12)
+
+            Text {
+              width: parent.width
+              textFormat: Text.PlainText
+              wrapMode: Text.Wrap
+              text: "WATCHLISTS · " + root.watchlistLibrary.lists.length + "/8"
+              color: root.dim
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.caption
+              font.bold: true
+            }
+
+            Text {
+              width: parent.width
+              textFormat: Text.PlainText
+              wrapMode: Text.Wrap
+              text: "Edits are saved to " + root.watchlistName + ". Give a new list or copy a name, or rename this list."
+              color: root.dim
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.body
+            }
+
+            WatchlistEditor {
+              id: watchlistEditor
+              width: parent.width
+              hostWidget: root.hostWidget
+              foreground: root.foreground
+              fontFamily: root.fontFamily
+              onResultReady: function(result) { root.handleWatchlistResult(result) }
+              onReturnFocus: keyCatcher.forceActiveFocus()
+            }
+
+            PanelSeparator { foreground: root.foreground }
 
             Text {
               width: parent.width
@@ -977,7 +1093,7 @@ Panel {
               width: parent.width
               wrapMode: Text.Wrap
               textFormat: Text.PlainText
-              text: "Keyboard: ↑/↓ select · [/] reorder · P pin · X/Delete remove · A add · M back"
+              text: "Keyboard: ↑/↓ select · [/] reorder · P pin · X/Delete remove · A add · N name · W next list · M back"
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
@@ -990,28 +1106,19 @@ Panel {
             width: parent.width
             spacing: Style.space(12)
 
-            Row {
-              visible: false
+            Flow {
               width: parent.width
+              spacing: Style.space(8)
 
-              Text {
-                width: parent.width - countLabel.width
-                textFormat: Text.PlainText
-                text: "WATCHLIST"
-                color: root.dim
-                font.family: root.fontFamily
-                font.pixelSize: Style.font.caption
-                font.bold: true
-                font.letterSpacing: 1.1
-              }
-
-              Text {
-                id: countLabel
-                textFormat: Text.PlainText
-                text: String(root.symbols.length)
-                color: root.dim
-                font.family: root.fontFamily
-                font.pixelSize: Style.font.caption
+              Button {
+                text: "Order: " + (root.sortMode === "gainers" ? "Gainers first"
+                  : root.sortMode === "losers" ? "Losers first" : "Saved")
+                foreground: root.foreground
+                tooltipText: "Cycle saved order, daily gainers and daily losers (S)"
+                Accessible.role: Accessible.Button
+                Accessible.name: text + ". Change watchlist sort order."
+                Accessible.onPressAction: root.cycleSort()
+                onClicked: root.cycleSort()
               }
             }
 
@@ -1026,8 +1133,8 @@ Panel {
               clip: false
               interactive: false
               boundsBehavior: Flickable.StopAtBounds
-              model: root.symbols
-              currentIndex: root.selectedIndex
+              model: root.displaySymbols
+              currentIndex: root.displaySymbols.indexOf(root.focusedSymbol)
               spacing: rowSpacing
 
               delegate: BorderSurface {
@@ -1035,7 +1142,7 @@ Panel {
                 required property string modelData
                 required property int index
                 property var quote: MarketModel.findQuote(service.quotes, modelData)
-                readonly property bool inspected: root.selectedIndex === index
+                readonly property bool inspected: root.focusedSymbol === modelData
                 readonly property bool pinned: modelData === root.primarySymbol
                 readonly property bool stale: service.state === "stale"
                   || (quote && (quote.stale === true || quote.cached === true))
@@ -1058,7 +1165,7 @@ Panel {
                     + (pinned ? ", pinned to bar" : "")
                   : modelData + ", quote unavailable"
                 Accessible.description: "Activate to inspect. Pinning is a separate action."
-                Accessible.onPressAction: root.inspectSymbol(quoteRow.modelData, quoteRow.index)
+                Accessible.onPressAction: root.inspectSymbol(quoteRow.modelData)
 
                 Row {
                   anchors.fill: parent
@@ -1151,7 +1258,7 @@ Panel {
                   anchors.fill: parent
                   hoverEnabled: true
                   cursorShape: Qt.PointingHandCursor
-                  onClicked: root.inspectSymbol(quoteRow.modelData, quoteRow.index)
+                  onClicked: root.inspectSymbol(quoteRow.modelData)
                 }
               }
             }

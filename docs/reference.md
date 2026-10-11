@@ -90,6 +90,27 @@ membership can drift, so it should never be treated as an endorsement.
 
 ## Use
 
+### Named watchlists
+
+Your existing symbols become the first watchlist, keeping their order and
+pinned quote. In **Manage**, enter a name and choose **New empty**, **Save copy**
+or **Rename**. Keep up to eight lists, each with a unique name of 1–32 characters
+and up to twelve symbols. Edits are saved automatically to the active list.
+Starting profiles replace the contents of that active list; other lists stay intact.
+
+Switch using the named buttons above the quotes or **W**. Switching also restores
+the pinned symbol and leaves the market-data consent setting unchanged. **Delete
+list** requires confirmation; at least one list must remain.
+
+The **Order** button or **S** cycles saved order, daily percentage gainers and
+daily percentage losers. Missing changes stay at the bottom, ties keep saved
+order, and refreshed rankings keep the same instrument selected. Management
+and the bar ticker always use saved order. Sorting and chart visibility persist
+across restarts and apply to all your lists.
+
+In Manage, **N** focuses the name field. Enter saves a copy; Tab/Shift-Tab moves
+through its actions and Escape returns to panel navigation.
+
 | Input | Action |
 | --- | --- |
 | Left-click the bar | Open or close Omarchy Markets |
@@ -101,12 +122,15 @@ membership can drift, so it should never be treated as an endorsement.
 | Up/Down or J/K | Move through profiles, manager rows, or the watchlist |
 | Left/Right | Expand the chart and change its range |
 | D | Show or hide the selected chart and statistics |
+| S | Cycle saved order, daily gainers and daily losers |
+| W | Switch to the next named watchlist |
 | Enter/Space | Choose the highlighted profile, focus custom entry, or inspect |
 | P | Pin the highlighted instrument to the bar |
 | R | Refresh now |
 | O | Open the highlighted quote on Yahoo Finance |
 | M | Enter or leave the watchlist manager |
 | A (manager) | Focus the add-symbol field |
+| N (manager) | Focus the watchlist-name field |
 | `[` / `]` (manager) | Move the highlighted symbol up or down |
 | X / B / C / T (manager) | Remove / change bar mode / data toggle / ticker pause |
 | 1–6 / C (setup) | Choose a numbered profile / start custom |
@@ -129,6 +153,12 @@ also exposes the manifest settings as an administrative fallback:
 | `tickerWidth` | `220` | Horizontal ticker viewport, 160–640 px |
 | `tickerSpeed` | `24` | Scroll speed; zero disables motion |
 | `tickerPaused` | `false` | Persistent manual pause state |
+| `sortMode` | `saved` | Panel order: `saved`, `gainers`, or `losers`; never rewrites symbol order |
+| `chartVisible` | `true` | Persistent Show/Hide chart preference |
+
+Named-list records (`watchlists`, `activeWatchlistId`) are managed by the panel
+inside the same widget entry. The flat symbol/profile/pin settings continue to
+mirror the active list, so existing CLI configuration and quote polling work.
 
 Example administrative configuration:
 

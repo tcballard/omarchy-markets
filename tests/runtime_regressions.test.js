@@ -85,8 +85,10 @@ assert.equal(scrolling.panelScroll.contentY, 600, "scroll remains within content
 
 const model = {};
 vm.runInNewContext(read("MarketModel.js").replace(/^\.pragma library\s*/, ""), model);
+const watchlists = {MarketModel: model};
+vm.runInNewContext(read("WatchlistModel.js").replace(/^\.(?:pragma|import).*$/gm, ""), watchlists);
 const settings = functions(bar, ["hasOwn", "boundedInteger", "normalizedSettingsPatch"], {
-  MarketModel: model, selectedRange: "1d", barMode: "ticker", tickerWidth: 220,
+  MarketModel: model, WatchlistModel: watchlists, selectedRange: "1d", barMode: "ticker", tickerWidth: 220,
   tickerSpeed: 24, refreshInterval: 900,
 });
 const previous = JSON.parse(read("tests/fixtures/v0.3.3-state.json")).settings;
@@ -98,12 +100,14 @@ const disabled = {...previous, dataEnabled: false};
 assert.equal(settings.normalizedSettingsPatch({}, disabled).dataEnabled, false);
 console.log("Helper isolation, popup contrast, keyboard scrolling and v0.3.3 settings regressions passed.");
 
-const detailState = functions(panel, ["toggleDetails", "requestFocusedHistory"], {
+const detailState = functions(panel, ["setDetailsExpanded", "toggleDetails", "requestFocusedHistory"], {
   detailsExpanded: true, focusedSymbol: "ACME", dataEnabled: true, selectedRange: "1mo",
   panelScroll: {contentY: 250}, Qt: {callLater: callback => callback()},
   keyCatcher: {forceActiveFocus() {}},
   service: {calls: [], requestHistory(symbol, range) { this.calls.push([symbol, range]); }},
 });
+detailState.root = detailState;
+detailState.hostWidget = {setChartVisible(value) { detailState.detailsExpanded = value; }};
 detailState.toggleDetails();
 assert.equal(detailState.detailsExpanded, false);
 assert.equal(detailState.panelScroll.contentY, 0);
