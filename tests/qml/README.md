@@ -19,7 +19,9 @@ The separate `qml-qt612` job runs the identical suite on pinned Qt 6.12.0,
 distributed by `PySide6-Essentials==6.12.0` and `shiboken6==6.12.0`.
 `pyside-runner` invokes Qt Quick Test directly and rejects an unexpected runtime
 version. Python is only the test launcher; it adds no plugin dependency.
-To reproduce in an environment with those packages installed:
+The CI runner also installs `libegl1` and `libopengl0` for Qt's graphics loader,
+even though the tests use software rendering. To reproduce with these runtime
+dependencies and the pinned packages installed:
 
 ```bash
 EXPECTED_QT_VERSION=6.12.0 QMLTESTRUNNER=./tests/qml/pyside-runner ./tests/qml/run
