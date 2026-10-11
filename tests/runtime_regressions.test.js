@@ -65,7 +65,7 @@ for (const sample of [
   {bg: color(0, 0, 0, .5), muted: color(.65, .65, .65), fg: color(1, 1, 1), fallback: true},
 ]) {
   colors.popupBackground = sample.bg;
-  colors.Color = {muted: sample.muted};
+  colors.Omarchy = {Color: {muted: sample.muted}};
   colors.foreground = sample.fg;
   const result = vm.runInContext(dimExpression, colors);
   assert.equal(result, sample.fallback ? sample.fg : sample.muted);

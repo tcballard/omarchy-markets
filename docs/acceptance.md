@@ -29,8 +29,10 @@ screenshots, and failures. A generated preview is not live-shell evidence.
 
 ## Chart inspection candidate — 11 October 2026
 
-`tests/qml/run` passes locally with Qt Quick Test 6.8.3 and the software/offscreen
-backend: five behavior checks plus setup/cleanup, with no warnings or skips.
+`tests/qml/run` passes locally with Qt Quick Test 6.4.2 and 6.8.3 using the
+software/offscreen backend: five behavior checks plus setup/cleanup on each,
+with no warnings or skips. The 6.4 run caught a Qt/Omarchy Color-name collision;
+production theme references now use an explicit Omarchy namespace.
 It loads shipped components against the documented host stubs and checks
 time-spaced hover selection, missing data, keyboard bounds, focus return,
 unchanged range during inspection, normal range keys afterwards, and settings

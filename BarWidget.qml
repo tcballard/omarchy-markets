@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Commons
+import qs.Commons as Omarchy
 import qs.Ui
 import "MarketModel.js" as MarketModel
 import "WatchlistModel.js" as WatchlistModel
@@ -49,8 +50,8 @@ BarWidget {
   readonly property int refreshInterval: boundedInteger(
     setting("refreshIntervalSec", setting("refreshInterval", 900)), 900, 300, 3600)
 
-  readonly property color barForeground: root.bar ? root.bar.barForeground : Color.foreground
-  readonly property color barBackground: root.bar ? root.bar.background : Color.background
+  readonly property color barForeground: root.bar ? root.bar.barForeground : Omarchy.Color.foreground
+  readonly property color barBackground: root.bar ? root.bar.background : Omarchy.Color.background
   readonly property color positiveBright: "#30d158"
   readonly property color positiveDark: "#137333"
   readonly property color negativeBright: "#ff453a"

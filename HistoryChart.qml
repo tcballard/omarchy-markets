@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Commons
+import qs.Commons as Omarchy
 import "ChartModel.js" as ChartModel
 import "MarketModel.js" as MarketModel
 
@@ -10,7 +11,7 @@ FocusScope {
   property alias referenceValue: plot.referenceValue
   property alias lineColor: plot.lineColor
   property alias referenceColor: plot.referenceColor
-  property color foreground: Color.popups.text
+  property color foreground: Omarchy.Color.popups.text
   property string fontFamily: Style.font.family
   property string currency: ""
   property string symbol: ""
