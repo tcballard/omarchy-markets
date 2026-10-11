@@ -22,6 +22,13 @@
   The chart baseline and return both use the first plotted price; quote changes
   explicitly compare against previous close. The provider footer has reserved
   space outside the scrolling viewport. Profiles remain setup and management concerns.
+- Chart inspection: pointer hover selects the nearest plotted sample. A separate
+  focus scope entered with I or Inspect chart owns Left/Right, Home/End and
+  Escape/Tab; ordinary panel arrows retain range selection. Painting and hit
+  testing share filtered price/time pairs and coordinates. The readout labels
+  UTC and missing times explicitly, keeps a fixed height, and leaves the live
+  quote unchanged. It uses existing history without a new provider request;
+  opening previously hidden details retains the normal history-loading path.
 - Durable configuration: selected profile, symbols, pinned symbol, selected
   chart range, bar mode, ticker width/speed, refresh interval, and consent live
   inline on the widget entry in Omarchy's `shell.json`.
@@ -85,9 +92,12 @@
   only, and never the sole source of information.
 - Verification: manifest/security validation, Python adapter/cache tests, pure
   JavaScript profile/format/state tests, process lifecycle tests, deterministic
-  fictional fixtures, and a live Omarchy matrix covering horizontal/vertical,
+  fictional fixtures, an offscreen Qt Quick smoke job, and a live Omarchy matrix covering horizontal/vertical,
   scaling, themes, multi-monitor, suspend/resume, reload, disable, removal, and
   first-party in-bar gating. Portable evidence must not be called live proof.
+  The Qt smoke loads production bar/panel/editor/chart components with narrow
+  host stubs and fails on warnings. It verifies bindings, painting and selected
+  input paths, not real Omarchy imports or compositor behavior.
 - Deferred: trading, holdings or P&L, alerts, news, recommendations, provider
   credentials, streaming guarantees, automatic currency conversion, and
   desktop surfaces outside the Omarchy bar/panel model.

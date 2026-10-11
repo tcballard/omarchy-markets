@@ -36,3 +36,19 @@ jobs:
         run: ./tests/run
       - name: Reject whitespace errors
         run: git diff --check
+  qml:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.4.0
+      - name: Install Qt Quick Test
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            qt6-declarative-dev-tools qml6-module-qttest \
+            qml6-module-qtquick qml6-module-qtquick-window \
+            qml6-module-qtquick-controls qml6-module-qtquick-templates \
+            qml6-module-qtquick-layouts qml6-module-qtqml \
+            qml6-module-qtqml-models qml6-module-qtqml-workerscript
+      - name: Load QML and exercise chart and panel interactions
+        run: ./tests/qml/run

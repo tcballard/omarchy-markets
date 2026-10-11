@@ -14,9 +14,10 @@ verified.
 | Setup consent and disabled/no-poll state | Automated source/state checks | Verify with process/network observation |
 | Horizontal single and ticker bar modes | Source checks | Inspect top/bottom bar |
 | Vertical bar | Source checks | Inspect left/right bar |
-| Panel focus, outside close, Escape and Tab | Source checks | Keyboard/pointer smoke test |
+| Panel focus, outside close, Escape and Tab | Selected focus/key paths in Qt; source checks | Keyboard/pointer smoke test |
 | Add, remove, reorder, inspect and pin | Model/source checks | Keyboard and pointer smoke test |
 | Ranges, stats and selected-only history | Model/provider checks | Inspect all five ranges |
+| Chart pointer/keyboard inspection | Offscreen Qt: samples, painting, focus and range isolation | Check real popup input and scrolling |
 | Themes, text scaling and translucent bar | Contrast/model checks | Light/dark themes and scaling |
 | Multi-monitor singleton | Lifecycle/source checks | Two monitors, mixed scale |
 | Reload, shell restart, disable/re-enable | State tests | Live lifecycle |
@@ -26,10 +27,31 @@ verified.
 Record the date, plugin SHA, Omarchy SHA, monitor/scaling details, commands,
 screenshots, and failures. A generated preview is not live-shell evidence.
 
+## Chart inspection candidate — 11 October 2026
+
+`tests/qml/run` passes locally with Qt Quick Test 6.8.3 and the software/offscreen
+backend: five behavior checks plus setup/cleanup, with no warnings or skips.
+It loads shipped components against the documented host stubs and checks
+time-spaced hover selection, missing data, keyboard bounds, focus return,
+unchanged range during inspection, normal range keys afterwards, and settings
+reactivity. GitHub's separate `qml` job runs the suite with Ubuntu 24.04's Qt 6
+packages; its log records the version and candidate SHA.
+
+Live host checks remain unrun for this candidate:
+
+- Hover and click chart points on the XPS; check price/UTC text and a stationary
+  readout area on short screens and at the intended text scale.
+- Use I, Left/Right, Home/End and Escape/Tab. Verify Escape first returns to the
+  panel, normal arrows change ranges, and the next Escape closes the popup.
+- Switch symbol, range and watchlist while inspecting; ensure no stale marker.
+- Check light/dark themes, popup scrolling, and no extra requests while stepping
+  through loaded points. Recheck named lists and restart persistence below.
+
 ## Watchlist-management candidate — 11 October 2026
 
-Live checks below are **unrun** in the development environment. No Omarchy/QML
-runtime is available there. Record the candidate SHA and host details when run.
+Live checks below are **unrun** in the development environment. No live Omarchy
+desktop is available there; offscreen Qt evidence is recorded above. Record the
+candidate SHA and host details when run.
 
 - Upgrade an existing custom list: symbols, order, pin, data consent, refresh
   interval and ticker settings survive unchanged.

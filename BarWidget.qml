@@ -665,7 +665,7 @@ BarWidget {
               / Math.max(1, root.tickerSpeed) * 1000))
             loops: Animation.Infinite
             running: root.tickerActive && tickerClip.canScroll
-            paused: root.tickerPaused || tickerHover.containsMouse
+            paused: running && (root.tickerPaused || tickerHover.containsMouse)
             onRunningChanged: {
               if (!running) tickerTrack.x = 0
             }

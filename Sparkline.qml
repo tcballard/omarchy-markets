@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Commons
+import "ChartModel.js" as ChartModel
 
 // Lightweight domain chart: a thin line and subtle area fill. Direction is
 // also conveyed by signed text elsewhere; color is never the sole signal.
@@ -14,18 +15,21 @@ Canvas {
   property real lineWidth: Math.max(1, Style.spaceReal(1.75))
   property bool showGrid: true
   property real referenceValue: NaN
+  readonly property var samples: ChartModel.samples(points, timestamps)
+  readonly property var domain: ChartModel.bounds(samples, referenceValue)
+  readonly property real inset: Math.max(lineWidth, 1)
+  readonly property real chartWidth: Math.max(1, width - inset * 2)
+  readonly property real chartHeight: Math.max(1, height - inset * 2)
 
   antialiasing: true
   renderStrategy: Canvas.Threaded
 
-  function finitePoints() {
-    var out = []
-    var source = Array.isArray(points) ? points : []
-    for (var i = 0; i < source.length; i++) {
-      var value = Number(source[i])
-      if (isFinite(value)) out.push(value)
-    }
-    return out
+  function xFor(index) {
+    return inset + chartWidth * samples[index].position
+  }
+
+  function yFor(value) {
+    return inset + chartHeight * (1 - (value - domain.minimum) / domain.spread)
   }
 
   function paintChart() {
@@ -33,25 +37,8 @@ Canvas {
     context.reset()
     context.clearRect(0, 0, width, height)
 
-    var values = finitePoints()
+    var values = samples
     if (values.length < 2 || width <= 2 || height <= 2) return
-
-    var minimum = values[0]
-    var maximum = values[0]
-    for (var i = 1; i < values.length; i++) {
-      minimum = Math.min(minimum, values[i])
-      maximum = Math.max(maximum, values[i])
-    }
-    if (isFinite(referenceValue)) {
-      minimum = Math.min(minimum, referenceValue)
-      maximum = Math.max(maximum, referenceValue)
-    }
-    var spread = maximum - minimum
-    if (spread <= 0) spread = Math.max(Math.abs(maximum) * 0.01, 1)
-
-    var inset = Math.max(lineWidth, 1)
-    var chartWidth = Math.max(1, width - inset * 2)
-    var chartHeight = Math.max(1, height - inset * 2)
 
     if (showGrid) {
       context.strokeStyle = gridColor
@@ -63,28 +50,6 @@ Canvas {
         context.lineTo(width, gy)
         context.stroke()
       }
-    }
-
-    var times = []
-    if (Array.isArray(timestamps) && timestamps.length === values.length) {
-      for (var t = 0; t < timestamps.length; t++) {
-        var timestamp = Number(timestamps[t])
-        if (!isFinite(timestamp)) {
-          times = []
-          break
-        }
-        times.push(timestamp)
-      }
-    }
-    var timeSpan = times.length > 1 ? times[times.length - 1] - times[0] : 0
-
-    function xFor(index) {
-      if (timeSpan > 0)
-        return inset + chartWidth * (times[index] - times[0]) / timeSpan
-      return inset + chartWidth * index / (values.length - 1)
-    }
-    function yFor(value) {
-      return inset + chartHeight * (1 - (value - minimum) / spread)
     }
 
     if (isFinite(referenceValue)) {
@@ -105,7 +70,7 @@ Canvas {
     context.fillStyle = gradient
     context.beginPath()
     context.moveTo(xFor(0), height - inset)
-    for (var p = 0; p < values.length; p++) context.lineTo(xFor(p), yFor(values[p]))
+    for (var p = 0; p < values.length; p++) context.lineTo(xFor(p), yFor(values[p].value))
     context.lineTo(xFor(values.length - 1), height - inset)
     context.closePath()
     context.fill()
@@ -116,19 +81,20 @@ Canvas {
     context.lineJoin = "round"
     context.beginPath()
     for (var j = 0; j < values.length; j++) {
-      if (j === 0) context.moveTo(xFor(j), yFor(values[j]))
-      else context.lineTo(xFor(j), yFor(values[j]))
+      if (j === 0) context.moveTo(xFor(j), yFor(values[j].value))
+      else context.lineTo(xFor(j), yFor(values[j].value))
     }
     context.stroke()
   }
 
   onPaint: paintChart()
-  onPointsChanged: requestPaint()
-  onTimestampsChanged: requestPaint()
+  onSamplesChanged: requestPaint()
   onLineColorChanged: requestPaint()
   onGridColorChanged: requestPaint()
   onReferenceColorChanged: requestPaint()
   onReferenceValueChanged: requestPaint()
+  onLineWidthChanged: requestPaint()
+  onShowGridChanged: requestPaint()
   onWidthChanged: requestPaint()
   onHeightChanged: requestPaint()
 }
