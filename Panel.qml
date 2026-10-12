@@ -202,37 +202,40 @@ Panel {
     return false
   }
 
-  function moveSelection(delta) {
+  function gridNeighbour(index, count, columns, dx, dy) {
+    if (count < 1) return -1
+    index = Math.max(0, Math.min(count - 1, index))
+    var column = index % columns
+    if (dx < 0 && column === 0) return index
+    if (dx > 0 && column === columns - 1) return index
+    var next = index + dx + dy * columns
+    return next >= 0 && next < count ? next : index
+  }
+
+  function moveCursor(dx, dy) {
+    // Arrow keys navigate the visible grid, never a hidden view or chart range.
+    if (displayingDetails) return
     if (setupRequired && !managing) {
-      var setupCount = profiles.length + 1
-      setupCursor = (setupCursor + delta + setupCount) % setupCount
+      if (setupCursor === profiles.length) {
+        if (dy < 0) setupCursor = Math.max(0, profiles.length - 2)
+      } else if (dy > 0 && setupCursor >= profiles.length - 2) {
+        setupCursor = profiles.length
+      } else {
+        setupCursor = gridNeighbour(setupCursor, profiles.length, 2, dx, dy)
+      }
       return
     }
     if (managing) {
-      managerSection = "symbols"
+      if (managerSection !== "symbols") return
       if (symbols.length === 0) return
-      selectedSymbol = symbols[(selectedIndex + delta + symbols.length) % symbols.length]
+      selectedSymbol = symbols[gridNeighbour(selectedIndex, symbols.length, managerGrid.columns, dx, dy)]
       keyboardCursor = true
       return
     }
     if (symbols.length === 0) return
     keyboardCursor = true
     var index = displaySymbols.indexOf(focusedSymbol)
-    selectedSymbol = displaySymbols[(index + delta + displaySymbols.length) % displaySymbols.length]
-    requestFocusedHistory()
-  }
-
-  function moveRange(delta) {
-    if (setupRequired || managing || focusedSymbol === "") return
-    setDetailsExpanded(true)
-    chartView = true
-    var options = MarketModel.rangeOptions()
-    var index = 0
-    for (var cursor = 0; cursor < options.length; cursor += 1) {
-      if (options[cursor].id === selectedRange) index = cursor
-    }
-    index = (index + delta + options.length) % options.length
-    chooseRange(options[index].id)
+    selectedSymbol = displaySymbols[gridNeighbour(index, symbols.length, watchlist.columns, dx, dy)]
   }
 
   function activateCurrent() {
@@ -245,9 +248,7 @@ Panel {
       symbolInput.forceActiveFocus()
       return
     }
-    chartView = true
-    setDetailsExpanded(true)
-    requestFocusedHistory()
+    inspectChart()
   }
 
   function inspectSymbol(symbol) {
@@ -477,8 +478,7 @@ Panel {
       anchors.fill: parent
       blocked: symbolInput.activeFocus || watchlistEditor.activeFocus || historyChart.activeFocus
       onMoveRequested: function(dx, dy) {
-        if (dx !== 0) root.moveRange(dx)
-        if (dy !== 0) root.moveSelection(dy)
+        root.moveCursor(dx, dy)
       }
       onActivateRequested: root.activateCurrent()
       onDeleteRequested: {
@@ -973,6 +973,7 @@ Panel {
             }
 
             Grid {
+              id: managerGrid
               width: parent.width
               columns: root.symbols.length > 4 ? 3 : 1
               columnSpacing: Style.space(6)
@@ -1136,7 +1137,7 @@ Panel {
               width: parent.width
               wrapMode: Text.Wrap
               textFormat: Text.PlainText
-              text: "↑/↓ select · [/] reorder · P pin · Delete remove · A add · N name"
+              text: "Arrow keys select · [/] reorder · P pin · Delete remove · A add · N name"
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
@@ -1494,7 +1495,9 @@ Panel {
                     instrumentType: root.chartQuote ? String(root.chartQuote.instrumentType || "") : ""
                     symbol: root.focusedSymbol
                     seriesKey: root.focusedSymbol + ":" + root.selectedRange
-                    onReturnFocus: keyCatcher.forceActiveFocus()
+                    onLeaveView: root.chartView = false
+                    onReturnFocus: if (root.opened)
+                      Qt.callLater(function() { keyCatcher.forceActiveFocus() })
                   }
 
                   Text {

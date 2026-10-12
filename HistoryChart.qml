@@ -31,6 +31,7 @@ FocusScope {
       + " · " + ChartModel.timestampLabel(inspectedSample.time)
     : "Hover for values or press I to inspect"
   signal returnFocus()
+  signal leaveView()
 
   implicitHeight: plot.height + Style.space(6) + readout.height
   height: implicitHeight
@@ -60,6 +61,7 @@ FocusScope {
 
   Keys.onPressed: function(event) {
     if (event.key === Qt.Key_Escape || event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab) {
+      if (event.key === Qt.Key_Escape) root.leaveView()
       finishInspection()
       event.accepted = true
     } else if (canInspect && (event.key === Qt.Key_Left || event.key === Qt.Key_Right

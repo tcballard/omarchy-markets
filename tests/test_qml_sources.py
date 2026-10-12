@@ -132,7 +132,7 @@ class QmlSourceContractTests(unittest.TestCase):
         self.assertIn('text: "STARTING PROFILES"', source)
         self.assertIn('text: "▲"', source)
         self.assertIn('text: "▼"', source)
-        self.assertIn('text: "↑/↓ select · [/] reorder · P pin · Delete remove · A add · N name"', source)
+        self.assertIn('text: "Arrow keys select · [/] reorder · P pin · Delete remove · A add · N name"', source)
 
     def test_widget_has_private_popout_contract(self) -> None:
         source = (ROOT / "BarWidget.qml").read_text(encoding="utf-8")
@@ -209,7 +209,7 @@ class QmlSourceContractTests(unittest.TestCase):
         for token in [
             "function activateCurrent()",
             "function managerShortcut(text)",
-            "function moveRange(delta)",
+            "function moveCursor(dx, dy)",
             "onDeleteRequested:",
             "Keys.onEscapePressed",
             "Keys.onTabPressed",

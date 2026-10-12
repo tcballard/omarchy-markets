@@ -126,8 +126,8 @@ does not interpolate prices or fetch additional detail.
 
 Choose **Inspect chart**, press **I**, or click a chart point to focus inspection.
 Left/Right steps through samples, Home/End jumps to the first/last sample, and
-Escape or Tab returns to panel navigation. Outside inspection, Left/Right
-still changes the chart range. Changing the series or its data clears the
+Escape returns to the watchlist; Tab returns to panel navigation. Choose a range
+with its labelled button. Arrow keys never change the chart range. Changing the series or its data clears the
 previous keyboard marker. Missing timestamps read **Time unavailable**.
 
 | Input | Action |
@@ -138,10 +138,10 @@ previous keyboard marker. Missing timestamps read **Time unavailable**.
 | Click a watchlist row | Inspect that instrument |
 | Click **Pin to bar** | Make the inspected instrument primary |
 | Click **Manage** | Add, remove, or reorder the watchlist |
-| Up/Down or J/K | Move through profiles, manager rows, or the watchlist |
-| Left/Right | Expand the chart and change its range |
+| Up/Down or J/K | Select the item directly above/below in the visible grid |
+| Left/Right or H/L | Select the left/right neighbour in the same grid row; edges stop |
 | D | Show or hide the selected chart and statistics |
-| I | Focus chart inspection; arrows step through points, Home/End jumps, Escape/Tab returns |
+| I | Focus chart inspection; Left/Right steps through points, Home/End jumps, Escape returns to watchlist |
 | S | Cycle saved order, daily gainers and daily losers |
 | W | Switch to the next named watchlist |
 | Enter/Space | Choose the highlighted profile, focus custom entry, or inspect |
@@ -329,8 +329,8 @@ The marketplace badge uses the Omarchy icon from
 [badge credits](assets/CREDITS.md).
 
 Use **Chart**, **I** or **D** to enter the selected instrument's chart view.
-Use **Watchlist** or **D** to return. Escape leaves chart inspection first,
-then returns to the watchlist before closing the panel. The two views do not
+Use **Watchlist**, **D** or **Escape** to return. Enter from the watchlist opens
+the selected chart and focuses inspection. The two views do not
 stack or scroll. Selecting rows in the watchlist does not request history;
 the bar quote poller continues. Manage has separate Symbols, Watchlists and
 Preferences sections so its controls also fit without scrolling.

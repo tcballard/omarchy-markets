@@ -2,6 +2,9 @@
 
 ## 0.5.0 — prepared, not yet released
 
+- Make arrows follow the visible grid: Left/Right stays in the row, Up/Down
+  stays in the column, and edges do not wrap. Enter opens the selected chart;
+  Escape returns to the watchlist. Arrows no longer open charts or change ranges.
 - Keep the popup compact without scrolling: show the watchlist and selected
   chart in separate views, use two columns for longer lists, and split management
   into Symbols, Watchlists and Preferences. All controls remain visible.

@@ -110,6 +110,22 @@ assert.equal(detailState.chartView, true);
 assert.deepEqual(detailState.service.calls, [["OTHER", "1mo"]], "expanding loads the current selection");
 console.log("Chart collapse and expansion regressions passed.");
 
+const navigation = functions(panel, ["gridNeighbour"], {});
+for (const [index, count, columns, dx, dy, expected] of [
+  [0, 12, 2, 1, 0, 1], [1, 12, 2, 0, 1, 3],
+  [3, 12, 2, -1, 0, 2], [2, 12, 2, 0, -1, 0],
+  [0, 12, 2, -1, 0, 0], [0, 12, 2, 0, -1, 0],
+  [1, 12, 2, 1, 0, 1], [11, 12, 2, 0, 1, 11],
+  [6, 7, 2, 1, 0, 6], [5, 7, 2, 0, 1, 5],
+  [2, 12, 3, 0, 1, 5], [5, 12, 3, -1, 0, 4],
+  [0, 6, 1, 1, 0, 0], [2, 6, 1, 0, 1, 3],
+  [0, 0, 2, 0, 1, -1],
+]) {
+  assert.equal(navigation.gridNeighbour(index, count, columns, dx, dy), expected,
+    `spatial neighbour from ${index} in ${columns} columns with (${dx},${dy})`);
+}
+console.log("Spatial grid navigation and bounded edges regressions passed.");
+
 // Run the shipped service response/age paths with a deterministic clock. No
 // process or network is started; these are provider snapshots, not live prices.
 let quoteClock = Date.parse("2026-10-12T15:00:00Z");

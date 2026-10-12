@@ -40,6 +40,8 @@ Switch lists above the quotes, then choose saved order, gainers or losers.
 The panel opens on a compact watchlist; longer lists use two columns. Open
 **Chart** for the selected instrument and **Watchlist** to return. Each view
 fits without scrolling. Your sort order is remembered after restarting the shell.
+Use all four arrow keys to select neighbouring quotes, Enter to open the chart
+and Escape to return. Selection stops at grid edges rather than wrapping.
 Hover over the chart to inspect a sampled price and timestamp, or press **I**
 and use the arrow keys. Escape returns to the watchlist controls.
 

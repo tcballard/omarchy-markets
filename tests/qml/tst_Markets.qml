@@ -179,7 +179,8 @@ Item {
       compare(panel.opened, true)
       compare(keys.blocked, false)
       keyClick(Qt.Key_Right)
-      compare(host.selectedRange, "5d", "normal panel arrows retain their range action")
+      compare(host.selectedRange, "1d", "watchlist arrows never change chart range")
+      compare(panel.displayingDetails, false, "Escape returns to the watchlist")
       host.setChartVisible(false)
       compare(panel.detailsExpanded, false)
       var quoteTime = findChild(panel, "selectedQuoteTime")
@@ -220,7 +221,8 @@ Item {
       compare(watchlist.columns, 2)
       fits("Twelve quotes and eight watchlists")
 
-      for (var i = 0; i < 11; i++) keyClick(Qt.Key_Down)
+      for (var i = 0; i < 5; i++) keyClick(Qt.Key_Down)
+      keyClick(Qt.Key_Right)
       tryCompare(panel, "focusedSymbol", "LIMA")
       var lastRow = watchlist.itemAtIndex(11)
       verify(lastRow !== null)
@@ -228,7 +230,8 @@ Item {
       verify(lastPosition.y >= 0 && lastPosition.y + lastRow.height <= content.height + 1,
         "the last quote is already visible without scrolling")
 
-      keyClick(Qt.Key_Down)
+      keyClick(Qt.Key_Left)
+      for (var up = 0; up < 5; up++) keyClick(Qt.Key_Up)
       tryCompare(panel, "focusedSymbol", "ACME")
       keyClick(Qt.Key_I)
       var inspector = findChild(panel, "historyChart")
@@ -239,7 +242,6 @@ Item {
       keyClick(Qt.Key_Escape)
       tryCompare(keys, "activeFocus", true)
 
-      keyClick(Qt.Key_D)
       compare(watchlist.visible, true)
       fits("Return to watchlist")
       panel.managing = true
@@ -257,6 +259,84 @@ Item {
         "short collapsed lists use their natural height")
       panel.close()
       compare(panel.opened, false)
+    }
+
+    function test_arrowsFollowVisibleGridsAndEnterEscapeChangeViews() {
+      var host = widget()
+      host.settings = {symbols: "ACME,BRAVO,CHARLIE,DELTA,ECHO,FOXTROT,GOLF,HOTEL,INDIA,JULIET,KILO,LIMA",
+        primarySymbol: "ACME", dataEnabled: true, tickerPaused: true, chartVisible: true}
+      var panel = createTemporaryObject(panelComponent, scene, {hostWidget: host, marketService: fixtureService})
+      panel.open()
+      var keys = findChild(panel, "panelKeys")
+      tryCompare(keys, "activeFocus", true)
+      var calls = fixtureService.historyCalls
+      for (var step of [[Qt.Key_Right, "BRAVO"], [Qt.Key_Down, "DELTA"],
+        [Qt.Key_Left, "CHARLIE"], [Qt.Key_Up, "ACME"],
+        [Qt.Key_Left, "ACME"], [Qt.Key_Up, "ACME"],
+        [Qt.Key_Right, "BRAVO"], [Qt.Key_Right, "BRAVO"]]) {
+        keyClick(step[0])
+        compare(panel.focusedSymbol, step[1])
+        compare(panel.displayingDetails, false)
+        compare(host.selectedRange, "1d")
+        compare(fixtureService.historyCalls, calls, "moving selection never requests chart history")
+      }
+      for (var i = 0; i < 5; i++) keyClick(Qt.Key_Down)
+      compare(panel.focusedSymbol, "LIMA")
+      keyClick(Qt.Key_Down)
+      keyClick(Qt.Key_Right)
+      compare(panel.focusedSymbol, "LIMA", "bottom and right edges do not wrap")
+      keyClick(Qt.Key_Left)
+      for (var j = 0; j < 5; j++) keyClick(Qt.Key_Up)
+      compare(panel.focusedSymbol, "ACME")
+      keyClick(Qt.Key_Return)
+      var inspector = findChild(panel, "historyChart")
+      tryCompare(inspector, "activeFocus", true)
+      compare(panel.displayingDetails, true)
+      compare(fixtureService.historyCalls, calls + 1)
+      keyClick(Qt.Key_Left)
+      compare(inspector.inspectedIndex, 1)
+      compare(host.selectedRange, "1d")
+      keyClick(Qt.Key_Escape)
+      tryCompare(keys, "activeFocus", true)
+      compare(panel.displayingDetails, false)
+      compare(panel.focusedSymbol, "ACME", "Back keeps the selected quote")
+
+      host.settings = {symbols: "ACME,BRAVO,CHARLIE,DELTA,ECHO,FOXTROT,GOLF",
+        primarySymbol: "ACME", dataEnabled: true, tickerPaused: true}
+      keyClick(Qt.Key_Right)
+      keyClick(Qt.Key_Down)
+      keyClick(Qt.Key_Down)
+      compare(panel.focusedSymbol, "FOXTROT")
+      keyClick(Qt.Key_Down)
+      compare(panel.focusedSymbol, "FOXTROT", "an incomplete last row has no neighbour below")
+      keyClick(Qt.Key_Left)
+      keyClick(Qt.Key_Down)
+      compare(panel.focusedSymbol, "GOLF")
+      keyClick(Qt.Key_Right)
+      compare(panel.focusedSymbol, "GOLF")
+
+      panel.managing = true
+      keyClick(Qt.Key_Up)
+      compare(panel.focusedSymbol, "DELTA", "manager movement matches its three-column grid")
+      keyClick(Qt.Key_Right)
+      compare(panel.focusedSymbol, "ECHO")
+      panel.managerSection = "lists"
+      keyClick(Qt.Key_Down)
+      compare(panel.managerSection, "lists", "arrows never jump to a hidden management section")
+      panel.managing = false
+      host.settings = {symbols: "", dataEnabled: false}
+      for (var profile of [[Qt.Key_Right, 1], [Qt.Key_Down, 3], [Qt.Key_Left, 2],
+        [Qt.Key_Up, 0], [Qt.Key_Left, 0]]) {
+        keyClick(profile[0])
+        compare(panel.setupCursor, profile[1])
+      }
+      host.settings = {symbols: "ACME,BRAVO,CHARLIE", primarySymbol: "ACME", dataEnabled: true}
+      panel.selectedSymbol = "ACME"
+      keyClick(Qt.Key_Right)
+      compare(panel.focusedSymbol, "ACME", "a single-column list has no right neighbour")
+      keyClick(Qt.Key_Down)
+      compare(panel.focusedSymbol, "BRAVO")
+      panel.close()
     }
 
     function test_widgetNamedListsAndSetupReactToSettings() {

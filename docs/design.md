@@ -30,7 +30,11 @@
   including footer and host insets, rather than hiding overflow behind a scrollbar.
 - Chart inspection: pointer hover selects the nearest plotted sample. A separate
   focus scope entered with I or Inspect chart owns Left/Right, Home/End and
-  Escape/Tab; ordinary panel arrows retain range selection. Painting and hit
+  Escape returns to the watchlist and Tab returns to panel navigation. Ordinary
+  arrows select spatial neighbours in the visible watchlist, setup or symbol
+  manager grid, with no wrapping at edges. They never change ranges or open
+  another view. Enter explicitly opens the selected chart; range buttons choose
+  timeframes. Painting and hit
   testing share filtered price/time pairs and coordinates. The readout labels
   UTC and missing times explicitly, keeps a fixed height, and leaves the live
   quote unchanged. It uses existing history without a new provider request;
