@@ -118,3 +118,62 @@ detailState.toggleDetails();
 assert.equal(detailState.detailsExpanded, true);
 assert.deepEqual(detailState.service.calls, [["OTHER", "1mo"]], "expanding loads the current selection");
 console.log("Chart collapse and expansion regressions passed.");
+
+// Run the shipped service response/age paths with a deterministic clock. No
+// process or network is started; these are provider snapshots, not live prices.
+let quoteClock = Date.parse("2026-10-12T15:00:00Z");
+class QuoteClock extends Date { static now() { return quoteClock; } }
+const lifecycle = {};
+vm.runInNewContext(read("ServiceLifecycle.js").replace(/^\.pragma library\s*/, ""), lifecycle);
+const quoteService = functions(service, ["mergeFreshQuotes", "completePartialErrors", "consumeResponse",
+  "expireQuoteAges", "failRequest", "conciseError"], {
+  Date: QuoteClock, MarketModel: model, ServiceLifecycle: lifecycle,
+  _requestActive: true, _activeGeneration: 1, _requestTimedOut: false,
+  _activeSymbolsKey: "ACME", symbolsKey: "ACME", configuredSymbols: ["ACME"],
+  quotes: [], refreshIntervalSec: 900, pollingAllowed: true, consecutiveFailures: 0, revision: 0,
+  settleActiveRequest() {}, syncOneDayHistory() {}, runQueuedRefresh() {},
+});
+Object.defineProperty(quoteService, "hasData", {get: () => quoteService.quotes.length > 0});
+const oldQuote = {symbol: "ACME", currency: "USD", regularMarketPrice: 123,
+  marketTime: "2026-10-09T20:00:00Z", sessionState: "regular",
+  regularSessionStart: "2026-10-12T13:30:00Z", regularSessionEnd: "2026-10-12T20:00:00Z"};
+function deliverQuotes(quotes, errors = []) {
+  quoteService.consumeResponse(1, 0, JSON.stringify({schemaVersion: 1, provider: "Fictional fixture",
+    generatedAt: new Date(quoteClock).toISOString(), quotes, errors}), "");
+}
+deliverQuotes([oldQuote]);
+assert.equal(quoteService.state, "stale", "successful fetch cannot make a three-day-old open-market quote fresh");
+assert.equal(quoteService.quotes[0].stale, true);
+assert.match(quoteService.lastError, /older than expected/);
+assert.equal(quoteService.consecutiveFailures, 0, "quote age is not a transport failure");
+const freshQuote = {...oldQuote, marketTime: "2026-10-12T14:59:00Z"};
+deliverQuotes([freshQuote]);
+assert.equal(quoteService.state, "ready", "a new quote clears the stale flag");
+assert.equal(quoteService.quotes[0].stale, false);
+const status = functions(panel, ["stateLabel"], {
+  MarketModel: model, dataEnabled: true, symbols: ["ACME"], service: quoteService, nowMs: quoteClock,
+});
+assert.equal(status.stateLabel(), "Fetched just now", "the header describes fetch time explicitly");
+quoteClock += 31 * 60 * 1000;
+quoteService.expireQuoteAges();
+assert.equal(quoteService.state, "stale", "aging/resume marks an old quote without another fetch");
+assert.equal(quoteService.quotes[0].stale, true);
+quoteClock = Date.parse("2026-10-12T15:00:00Z");
+quoteService.configuredSymbols = ["ACME", "OTHER"];
+quoteService.symbolsKey = quoteService._activeSymbolsKey = "ACME,OTHER";
+deliverQuotes([freshQuote, {...oldQuote, symbol: "OTHER"}]);
+assert.equal(quoteService.state, "partial");
+assert.deepEqual(Array.from(quoteService.quotes, q => q.stale), [false, true]);
+deliverQuotes([freshQuote], [{symbol: "OTHER", code: "offline", message: "Offline"}]);
+assert.equal(quoteService.state, "partial");
+assert.equal(quoteService.quotes[1].regularMarketPrice, 123, "partial errors preserve last-good values");
+quoteService.failRequest("Offline", "offline");
+quoteService.expireQuoteAges();
+assert.equal(quoteService.state, "stale", "the age timer cannot recover a failed fetch");
+quoteService.configuredSymbols = ["ACME"];
+quoteService.symbolsKey = quoteService._activeSymbolsKey = "ACME";
+deliverQuotes([{...oldQuote, sessionState: "closed", regularSessionStart: "2026-10-09T13:30:00Z",
+  regularSessionEnd: "2026-10-09T20:00:00Z"}]);
+assert.equal(quoteService.state, "ready", "last completed session does not expire over a weekend");
+assert.equal(quoteService.quotes[0].stale, false);
+console.log("Quote age, fetch labeling, partial responses, recovery and closed-session regressions passed.");

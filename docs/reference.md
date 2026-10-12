@@ -87,6 +87,11 @@ membership can drift, so it should never be treated as an endorsement.
 - Shares one poller across monitors and stores a bounded last-good cache so a
   temporary outage does not turn known values into zeroes.
 - Uses symbols, arrows, signs, and text as well as colour for direction.
+- Uses points for index levels and changes, and preserves significant digits
+  for tiny crypto prices. GBP and UK pence remain distinct.
+- Labels the last fetch separately from each inspected quote's own timestamp,
+  including with the chart hidden. Pre-market/after-hours exchange status does
+  not change the displayed regular-session price into an extended-hours quote.
 
 ## Use
 
@@ -197,6 +202,16 @@ Requests contain the configured public symbols plus the selected history range.
 There is no API key, account, telemetry, hosted proxy, plugin daemon, or
 currency conversion. Values remain in each instrument's native Yahoo quote
 currency; London `.L` equities, for example, are commonly reported in pence.
+Index levels are shown in points rather than the provider's currency label.
+
+**Fetched** describes a request's completion snapshot, not a new market trade.
+The selected instrument separately shows its quote age; unknown times are
+labelled unavailable. Active/continuous quotes older than 30 minutes or twice
+the refresh interval (whichever is longer) are marked stale. Completed regular
+session bounds keep ordinary closing quotes valid while markets are closed;
+where those bounds are missing, the timestamp remains visible without an
+invented trading calendar. This is a conservative age warning, not a guarantee
+of freshness or a measured exchange delay. Quotes may be delayed.
 
 Yahoo's endpoint is undocumented and best effort. It has no published uptime or
 rate-limit guarantee, can return delayed or indicative data, and may change or
@@ -314,5 +329,5 @@ The marketplace badge uses the Omarchy icon from
 
 Chart details can be collapsed using **Hide chart** below the watchlist and
 restored with **Show chart** or **D**. The choice survives closing and reopening
-the panel until the plugin reloads. Selecting rows while collapsed keeps the
+the panel and shell restarts. Selecting rows while collapsed keeps the
 chart closed and avoids requesting their history; the bar quote poller continues.

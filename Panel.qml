@@ -159,6 +159,7 @@ Panel {
   }
 
   function open() {
+    nowMs = Date.now()
     managing = false
     managerMessage = ""
     syncSelection()
@@ -440,12 +441,12 @@ Panel {
     if (service.refreshing && service.quotes.length === 0) return "Updating…"
     if (service.state === "disabled") return "Polling paused"
     if (service.state === "stale") return "Stale data"
-    if (service.state === "partial") return "Some quotes unavailable"
+    if (service.state === "partial") return "Some quotes not current"
     if (service.state === "dependency-missing") return "Python 3 needed"
     if (service.state === "offline") return "Offline"
     if (service.state === "failed" || service.state === "malformed") return "Unavailable"
     if (service.lastUpdated && service.lastUpdated.getTime() > 0)
-      return MarketModel.formatFreshness(service.lastUpdated, nowMs)
+      return "Fetched " + MarketModel.formatFreshness(service.lastUpdated, nowMs).toLowerCase()
     return "Waiting"
   }
 
@@ -1245,8 +1246,8 @@ Panel {
                       textFormat: Text.PlainText
                       horizontalAlignment: Text.AlignRight
                       text: quoteRow.quote
-                        ? MarketModel.formatPrice(quoteRow.quote.regularMarketPrice,
-                          quoteRow.quote.currency) : "—"
+                        ? MarketModel.formatQuotePrice(quoteRow.quote.regularMarketPrice,
+                          quoteRow.quote) : "—"
                       color: root.foreground
                       font.family: root.fontFamily
                       font.pixelSize: Style.font.body
@@ -1260,7 +1261,7 @@ Panel {
                       text: quoteRow.quote
                         ? root.directionArrow(quoteRow.quote) + " "
                           + MarketModel.formatPercent(quoteRow.quote.changePercent)
-                          + (quoteRow.stale ? " · STALE" : " today") : "—"
+                          + (quoteRow.stale ? " · STALE" : " vs close") : "—"
                       color: quoteRow.stale ? root.negativeColor
                         : root.movementColorFor(quoteRow.quote)
                       font.family: root.fontFamily
@@ -1282,6 +1283,21 @@ Panel {
             }
 
             PanelSeparator { foreground: root.foreground }
+
+            Text {
+              objectName: "selectedQuoteTime"
+              width: parent.width
+              visible: root.focusedQuote !== null
+              textFormat: Text.PlainText
+              text: root.focusedQuote ? root.focusedSymbol + " · "
+                + MarketModel.quoteSessionLabel(root.focusedQuote) + " · "
+                + MarketModel.quoteTimeLabel(root.focusedQuote, root.nowMs) : ""
+              color: root.dim
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.caption
+              wrapMode: Text.Wrap
+              Accessible.name: text
+            }
 
             Button {
               width: parent.width
@@ -1346,7 +1362,7 @@ Panel {
                       width: parent.width
                       textFormat: Text.PlainText
                       text: root.detailQuote
-                        ? root.focusedSymbol + " · " + String(root.detailQuote.currency || "")
+                        ? root.focusedSymbol + " · " + MarketModel.quoteUnitLabel(root.detailQuote)
                           + " · " + MarketModel.marketStateLabel(root.detailQuote)
                         : "Quote unavailable"
                       color: root.dim
@@ -1366,8 +1382,8 @@ Panel {
                       textFormat: Text.PlainText
                       horizontalAlignment: Text.AlignRight
                       text: root.detailQuote
-                        ? MarketModel.formatPrice(root.detailQuote.regularMarketPrice,
-                          root.detailQuote.currency) : "—"
+                        ? MarketModel.formatQuotePrice(root.detailQuote.regularMarketPrice,
+                          root.detailQuote) : "—"
                       color: root.foreground
                       font.family: root.fontFamily
                       font.pixelSize: Style.font.heading * 1.5
@@ -1381,8 +1397,8 @@ Panel {
                       horizontalAlignment: Text.AlignRight
                       text: root.detailQuote
                         ? root.directionArrow(root.detailQuote) + " "
-                          + MarketModel.formatDelta(root.detailQuote.change,
-                            root.detailQuote.currency) + "  "
+                          + MarketModel.formatQuoteDelta(root.detailQuote.change,
+                            root.detailQuote) + "  "
                           + MarketModel.formatPercent(root.detailQuote.changePercent)
                         : "—"
                       color: root.movementColorFor(root.detailQuote)
@@ -1458,6 +1474,7 @@ Panel {
                     foreground: root.foreground
                     fontFamily: root.fontFamily
                     currency: root.chartQuote ? String(root.chartQuote.currency || "") : ""
+                    instrumentType: root.chartQuote ? String(root.chartQuote.instrumentType || "") : ""
                     symbol: root.focusedSymbol
                     seriesKey: root.focusedSymbol + ":" + root.selectedRange
                     onReturnFocus: keyCatcher.forceActiveFocus()
@@ -1591,7 +1608,7 @@ Panel {
         visible: !root.setupRequired && !root.managing
         wrapMode: Text.Wrap
         textFormat: Text.PlainText
-        text: "Yahoo Finance · Unofficial data · Informational only"
+        text: "Yahoo Finance · Unofficial data · Quotes may be delayed"
         color: root.dim
         font.family: root.fontFamily
         font.pixelSize: Style.font.caption

@@ -87,6 +87,20 @@
 - User-visible states: setup, disabled, waiting, loading, ready, partial,
   stale/cached, market closed, offline/timeout, dependency missing, malformed
   response, empty, and failed. Missing values render as an em dash.
+- Quote correctness: index values use points while the provider's currency
+  metadata is retained. Tiny nonzero prices keep at least four significant
+  digits, with bounded scientific notation for extreme magnitudes. Fetch time
+  is labelled separately from quote time, which stays available with details
+  collapsed. Regular-session prices are never labelled as extended-hours prices.
+- Quote-age policy: active/continuous quotes older than the greater of 30
+  minutes or twice the configured refresh interval are stale. This conservative
+  threshold is not an exchange-delay guarantee. Completed regular-session
+  bounds, when supplied, let closing quotes remain valid over weekends/holidays.
+  The first threshold window after the open permits waiting for a new quote.
+  Closed/pre/post sessions without completed bounds retain their explicit quote
+  age; missing or future timestamps remain unknown. No exchange calendar or
+  exact feed delay is inferred. The UI says quotes may be delayed. A 30-second
+  local age check never requests data and cannot recover a failed fetch.
 - Accessibility: every action has a keyboard path and accessible name; signed
   arrows/text accompany color; ticker motion is optional, pausable, horizontal
   only, and never the sole source of information.

@@ -140,6 +140,19 @@ Item {
       compare(item.activeFocus, false)
     }
 
+    function test_chartQuotesRetainTinyPricesAndIndexUnits() {
+      var item = chart()
+      item.points = [0.000000122, 0.000000123]
+      item.focusChart()
+      verify(item.readoutText.indexOf("$0.0000001230") >= 0)
+      item.instrumentType = "INDEX"
+      item.points = [5995, 6000]
+      item.focusChart()
+      verify(item.readoutText.indexOf("6,000.00 pts") >= 0)
+      compare(item.readoutText.indexOf("$"), -1)
+      item.finishInspection()
+    }
+
     function test_panelLoadsAndChartKeysDoNotChangeRange() {
       var host = widget()
       var panel = createTemporaryObject(panelComponent, scene, {hostWidget: host, marketService: fixtureService})
@@ -169,6 +182,11 @@ Item {
       compare(host.selectedRange, "5d", "normal panel arrows retain their range action")
       host.setChartVisible(false)
       compare(panel.detailsExpanded, false)
+      var quoteTime = findChild(panel, "selectedQuoteTime")
+      verify(quoteTime.visible, "quote age stays available when the chart is hidden")
+      verify(quoteTime.text.indexOf("Regular-session quote") >= 0)
+      verify(quoteTime.text.indexOf("As of") >= 0)
+      verify(panel.stateLabel().indexOf("Fetched ") === 0)
       panel.managing = true
       keyClick(Qt.Key_N)
       tryCompare(keys, "blocked", true)

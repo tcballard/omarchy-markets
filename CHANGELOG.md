@@ -2,6 +2,13 @@
 
 ## 0.5.0 — prepared, not yet released
 
+- Preserve significant digits in tiny nonzero quotes and changes; use index
+  points throughout the ticker, panel, chart inspection and accessibility.
+- Separate fetch time from quote time, retain selected-quote age when the chart
+  is hidden, and flag unexpectedly old active-session quotes even after a
+  successful request. Keep valid closing quotes over weekends and holidays.
+- Label regular-session prices explicitly, replace ambiguous "today" row labels
+  with "vs close", and disclose that quotes may be delayed.
 - Inspect loaded chart points with a pointer or keyboard, showing the sampled
   price and UTC timestamp. I enters inspection; Left/Right, Home/End and Escape
   navigate without changing the chart range or current quote.
