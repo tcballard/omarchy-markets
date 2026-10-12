@@ -2,9 +2,9 @@
 
 ## 0.5.0 — prepared, not yet released
 
-- Cap the popup at 560 scaled pixels or three quarters of the usable screen
-  height and scroll longer watchlists, chart details and management controls
-  inside it instead of filling the screen height.
+- Keep the popup compact without scrolling: show the watchlist and selected
+  chart in separate views, use two columns for longer lists, and split management
+  into Symbols, Watchlists and Preferences. All controls remain visible.
 - Preserve significant digits in tiny nonzero quotes and changes; use index
   points throughout the ticker, panel, chart inspection and accessibility.
 - Separate fetch time from quote time, retain selected-quote age when the chart
@@ -27,7 +27,7 @@
   symbols, order and pinned quote without changing market-data consent.
 - Sort the panel by daily percentage gainers or losers without changing saved
   order or the ticker. Keep the inspected symbol selected as prices reorder.
-- Remember chart visibility and sort preference across shell restarts.
+- Remember sort preference across shell restarts; always open on the watchlist.
 - Align the Add button with the symbol field using the shared Button.
   Thanks to Shawn Yeager for the original fix in #11, included through #12.
 

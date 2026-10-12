@@ -72,17 +72,6 @@ for (const sample of [
   if (sample.bg.a === 1) assert.ok(colors.contrastRatio(result, sample.bg) >= 4.5);
 }
 
-const scrolling = functions(panel, ["revealItem"], {
-  panelScroll: {contentY: 0, height: 300, contentHeight: 900}, contentColumn: {},
-});
-const item = (y, height) => ({height, mapToItem: () => ({y})});
-scrolling.revealItem(item(760, 100));
-assert.equal(scrolling.panelScroll.contentY, 560, "offscreen profile is brought into view");
-scrolling.revealItem(item(0, 100));
-assert.equal(scrolling.panelScroll.contentY, 0, "wrapping back to first profile scrolls up");
-scrolling.revealItem(item(850, 100));
-assert.equal(scrolling.panelScroll.contentY, 600, "scroll remains within content bounds");
-
 const model = {};
 vm.runInNewContext(read("MarketModel.js").replace(/^\.pragma library\s*/, ""), model);
 const watchlists = {MarketModel: model};
@@ -98,24 +87,26 @@ const paused = settings.normalizedSettingsPatch({tickerPaused: false}, structure
 assert.deepEqual(JSON.parse(JSON.stringify(paused)), {...previous, tickerPaused: false});
 const disabled = {...previous, dataEnabled: false};
 assert.equal(settings.normalizedSettingsPatch({}, disabled).dataEnabled, false);
-console.log("Helper isolation, popup contrast, keyboard scrolling and v0.3.3 settings regressions passed.");
+console.log("Helper isolation, popup contrast and v0.3.3 settings regressions passed.");
 
 const detailState = functions(panel, ["setDetailsExpanded", "toggleDetails", "requestFocusedHistory"], {
   detailsExpanded: true, focusedSymbol: "ACME", dataEnabled: true, selectedRange: "1mo",
-  panelScroll: {contentY: 250}, Qt: {callLater: callback => callback()},
+  chartView: true, Qt: {callLater: callback => callback()},
   keyCatcher: {forceActiveFocus() {}},
   service: {calls: [], requestHistory(symbol, range) { this.calls.push([symbol, range]); }},
 });
 detailState.root = detailState;
+Object.defineProperty(detailState, "displayingDetails", {get() { return this.chartView && this.detailsExpanded; }});
 detailState.hostWidget = {setChartVisible(value) { detailState.detailsExpanded = value; }};
 detailState.toggleDetails();
 assert.equal(detailState.detailsExpanded, false);
-assert.equal(detailState.panelScroll.contentY, 0);
+assert.equal(detailState.chartView, false, "returning to the watchlist replaces the chart view");
 detailState.requestFocusedHistory();
 assert.equal(detailState.service.calls.length, 0, "collapsed selection does not request history");
 detailState.focusedSymbol = "OTHER";
 detailState.toggleDetails();
 assert.equal(detailState.detailsExpanded, true);
+assert.equal(detailState.chartView, true);
 assert.deepEqual(detailState.service.calls, [["OTHER", "1mo"]], "expanding loads the current selection");
 console.log("Chart collapse and expansion regressions passed.");
 

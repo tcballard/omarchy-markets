@@ -118,21 +118,21 @@ class QmlSourceContractTests(unittest.TestCase):
         self.assertEqual(defaults["tickerWidth"], 220)
         source = (ROOT / "Panel.qml").read_text(encoding="utf-8")
         self.assertIn("id: marketToolbar", source)
-        self.assertIn("readonly property int rowHeight: Style.space(56)", source)
-        self.assertIn("PanelSeparator { foreground: root.foreground }", source)
+        self.assertIn("readonly property int rowHeight: Style.space(48)", source)
+        self.assertIn("PanelSeparator {", source)
 
-    def test_panel_fits_host_insets_and_scrolls_overflow(self) -> None:
+    def test_panel_fits_host_insets_without_a_scroll_container(self) -> None:
         source = (ROOT / "Panel.qml").read_text(encoding="utf-8")
         self.assertIn("centerOnBar: false", source)
         self.assertIn("panel.fittedContentHeight(contentColumn.implicitHeight + footerReserve)", source)
-        self.assertIn("ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }", source)
-        self.assertIn("interactive: contentHeight > height", source)
+        self.assertNotIn("ScrollBar", source)
+        self.assertNotIn("Flickable {", source)
         self.assertIn("clip: true", source)
         self.assertIn("Qt.callLater(function() { keyCatcher.forceActiveFocus() })", source)
         self.assertIn('text: "STARTING PROFILES"', source)
         self.assertIn('text: "▲"', source)
         self.assertIn('text: "▼"', source)
-        self.assertIn('text: "Keyboard: ↑/↓ select · [/] reorder · P pin · X/Delete remove · A add · N name · W next list · M back"', source)
+        self.assertIn('text: "↑/↓ select · [/] reorder · P pin · Delete remove · A add · N name"', source)
 
     def test_widget_has_private_popout_contract(self) -> None:
         source = (ROOT / "BarWidget.qml").read_text(encoding="utf-8")

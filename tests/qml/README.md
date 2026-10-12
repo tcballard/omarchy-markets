@@ -4,8 +4,9 @@
 Panel, WatchlistEditor, HistoryChart and Sparkline in Qt Quick Test. It renders
 the chart offscreen and sends pointer/key events, checking point selection,
 focus return, normal range navigation, settings reactivity and named lists.
-A twelve-symbol regression checks the compact popup height, keyboard reveal of
-the last row and chart, short-screen fitting and natural height for short lists.
+A twelve-symbol/eight-list regression checks that the watchlist, chart, each
+management section and profile chooser fit without scrolling or hidden controls.
+The host stub includes content padding so fitting includes the actual viewport.
 Fictional data stays in process; the live provider service is not instantiated.
 QML load failures and warnings fail the command.
 

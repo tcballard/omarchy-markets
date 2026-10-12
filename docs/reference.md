@@ -74,7 +74,8 @@ membership can drift, so it should never be treated as an endorsement.
   use the compact pinned-symbol presentation.
 - Keeps the watchlist first, with company names beneath symbols and aligned
   prices and daily changes. Chart ranges sit beside the selected instrument’s
-  larger chart below. Narrow panels hide row charts to keep names readable.
+  chart in a separate view. Longer lists use two columns; narrow quote cards
+  hide miniature charts to keep names readable. The panel has no scrolling.
 - Keeps Profiles in onboarding and management, so they accelerate setup without
   turning the normal market view into a configuration dashboard.
 - Inspects a row without silently changing the bar; pinning the selected symbol
@@ -103,15 +104,15 @@ or **Rename**. Keep up to eight lists, each with a unique name of 1–32 charact
 and up to twelve symbols. Edits are saved automatically to the active list.
 Starting profiles replace the contents of that active list; other lists stay intact.
 
-Switch using the named buttons above the quotes or **W**. Switching also restores
+Switch using the watchlist selector above the quotes or **W**. Switching also restores
 the pinned symbol and leaves the market-data consent setting unchanged. **Delete
 list** requires confirmation; at least one list must remain.
 
 The **Order** button or **S** cycles saved order, daily percentage gainers and
 daily percentage losers. Missing changes stay at the bottom, ties keep saved
 order, and refreshed rankings keep the same instrument selected. Management
-and the bar ticker always use saved order. Sorting and chart visibility persist
-across restarts and apply to all your lists.
+and the bar ticker always use saved order. Sorting persists across restarts and
+applies to all your lists. The panel opens on the watchlist.
 
 In Manage, **N** focuses the name field. Enter saves a copy; Tab/Shift-Tab moves
 through its actions and Escape returns to panel navigation.
@@ -173,7 +174,7 @@ also exposes the manifest settings as an administrative fallback:
 | `tickerSpeed` | `24` | Scroll speed; zero disables motion |
 | `tickerPaused` | `false` | Persistent manual pause state |
 | `sortMode` | `saved` | Panel order: `saved`, `gainers`, or `losers`; never rewrites symbol order |
-| `chartVisible` | `true` | Persistent Show/Hide chart preference |
+| `chartVisible` | `true` | Stored chart enablement; opening starts on the watchlist |
 
 Named-list records (`watchlists`, `activeWatchlistId`) are managed by the panel
 inside the same widget entry. The flat symbol/profile/pin settings continue to
@@ -327,7 +328,9 @@ The marketplace badge uses the Omarchy icon from
 [omarchy-badges](https://github.com/tcballard/omarchy-badges), with attribution in
 [badge credits](assets/CREDITS.md).
 
-Chart details can be collapsed using **Hide chart** below the watchlist and
-restored with **Show chart** or **D**. The choice survives closing and reopening
-the panel and shell restarts. Selecting rows while collapsed keeps the
-chart closed and avoids requesting their history; the bar quote poller continues.
+Use **Chart**, **I** or **D** to enter the selected instrument's chart view.
+Use **Watchlist** or **D** to return. Escape leaves chart inspection first,
+then returns to the watchlist before closing the panel. The two views do not
+stack or scroll. Selecting rows in the watchlist does not request history;
+the bar quote poller continues. Manage has separate Symbols, Watchlists and
+Preferences sections so its controls also fit without scrolling.

@@ -17,6 +17,7 @@ FocusScope {
   property string instrumentType: ""
   property string symbol: ""
   property string seriesKey: ""
+  property real plotHeight: Style.space(160)
   property int keyboardIndex: -1
   readonly property bool canInspect: plot.samples.length >= 2
   readonly property real pointerX: hover.point.position.x
@@ -76,7 +77,7 @@ FocusScope {
     id: plot
     objectName: "historyPlot"
     width: parent.width
-    height: Style.space(160)
+    height: root.plotHeight
     clip: true
     onSamplesChanged: root.keyboardIndex = -1
 

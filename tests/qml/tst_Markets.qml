@@ -168,7 +168,7 @@ Item {
       keyClick(Qt.Key_Left)
       compare(inspector.inspectedIndex, 1)
       compare(panel.selectedRange, "1d")
-      compare(fixtureService.historyCalls, calls, "inspection reuses already loaded history")
+      compare(fixtureService.historyCalls, calls + 1, "entering the chart view requests the selected range once")
       host.setChartVisible(false)
       tryCompare(keys, "activeFocus", true, 1000, "a hidden chart cannot keep panel keys blocked")
       host.setChartVisible(true)
@@ -196,54 +196,63 @@ Item {
       compare(panel.opened, false)
     }
 
-    function test_panelHeightStaysCompactAndOverflowRemainsReachable() {
+    function test_compactViewsFitWithoutScrollingOrHiddenControls() {
       var host = widget()
       host.settings = {symbols: "ACME,BRAVO,CHARLIE,DELTA,ECHO,FOXTROT,GOLF,HOTEL,INDIA,JULIET,KILO,LIMA",
         primarySymbol: "ACME", dataEnabled: true, tickerPaused: true, chartVisible: true}
+      for (var n = 1; n < 8; n++) verify(host.createWatchlist("Research watchlist " + n, false).ok)
       var panel = createTemporaryObject(panelComponent, scene, {hostWidget: host, marketService: fixtureService})
       verify(panel !== null)
       panel.open()
       var popup = findChild(panel, "marketsPopup")
-      var scroll = findChild(panel, "marketsScroll")
+      var content = findChild(panel, "marketsContent")
+      var column = findChild(panel, "marketsContentColumn")
       var watchlist = findChild(panel, "marketWatchlist")
       var keys = findChild(panel, "panelKeys")
       tryCompare(keys, "activeFocus", true)
-      tryCompare(popup, "contentHeight", 510)
-      popup.availableCardHeight = 1000
-      tryCompare(popup, "contentHeight", 560, 1000, "large screens still use the compact absolute cap")
-      verify(scroll.contentHeight > scroll.height, "long lists and details scroll inside the height cap")
+      function fits(view) {
+        tryVerify(function() { return column.implicitHeight <= content.height + 1 }, 1000,
+          view + " must fit entirely: content " + column.implicitHeight + ", available " + content.height)
+        verify(popup.contentHeight <= 510)
+        compare(content.contentY, undefined, "the popup has no scroll container")
+      }
+      compare(panel.displayingDetails, false, "opening starts at the watchlist")
+      compare(watchlist.columns, 2)
+      fits("Twelve quotes and eight watchlists")
 
       for (var i = 0; i < 11; i++) keyClick(Qt.Key_Down)
       tryCompare(panel, "focusedSymbol", "LIMA")
-      tryVerify(function() { return scroll.contentY > 0 })
       var lastRow = watchlist.itemAtIndex(11)
       verify(lastRow !== null)
-      tryVerify(function() {
-        var position = lastRow.mapToItem(scroll.contentItem, 0, 0)
-        return position.y >= scroll.contentY - 1
-          && position.y + lastRow.height <= scroll.contentY + scroll.height + 1
-      }, 1000, "keyboard selection reveals the last row without enlarging the panel")
+      var lastPosition = lastRow.mapToItem(content, 0, 0)
+      verify(lastPosition.y >= 0 && lastPosition.y + lastRow.height <= content.height + 1,
+        "the last quote is already visible without scrolling")
 
       keyClick(Qt.Key_Down)
       tryCompare(panel, "focusedSymbol", "ACME")
       keyClick(Qt.Key_I)
       var inspector = findChild(panel, "historyChart")
       tryCompare(inspector, "activeFocus", true)
-      var chartPosition = inspector.mapToItem(scroll.contentItem, 0, 0)
-      verify(chartPosition.y >= scroll.contentY - 1)
-      verify(chartPosition.y + inspector.height <= scroll.contentY + scroll.height + 1,
-        "chart inspection remains reachable below a long watchlist")
-      compare(popup.contentHeight, 560)
+      compare(watchlist.visible, false)
+      compare(panel.displayingDetails, true)
+      fits("Chart and statistics")
       keyClick(Qt.Key_Escape)
       tryCompare(keys, "activeFocus", true)
 
-      popup.availableCardHeight = 300
-      tryCompare(popup, "contentHeight", 225, 1000, "shorter screens retain space outside the popup")
-      verify(scroll.height > 0)
-      verify(scroll.contentY <= scroll.contentHeight - scroll.height + 1)
+      keyClick(Qt.Key_D)
+      compare(watchlist.visible, true)
+      fits("Return to watchlist")
+      panel.managing = true
+      for (var section of ["symbols", "lists", "preferences"]) {
+        panel.managerSection = section
+        fits("Manage " + section)
+      }
+      panel.managing = false
+      host.settings = {symbols: "", dataEnabled: false}
+      fits("Profile chooser")
       host.settings = {symbols: "ACME", primarySymbol: "ACME", dataEnabled: true,
         tickerPaused: true, chartVisible: false}
-      popup.availableCardHeight = 680
+      fits("Short watchlist")
       tryVerify(function() { return popup.contentHeight < 560 }, 1000,
         "short collapsed lists use their natural height")
       panel.close()

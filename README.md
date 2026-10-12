@@ -37,7 +37,9 @@ points; the Meme Coins profile is labelled speculative.
 Keep up to eight named watchlists, with changes saved to the active list.
 Use **Manage** to create an empty list, save a copy, rename or delete it.
 Switch lists above the quotes, then choose saved order, gainers or losers.
-Your sort order and chart visibility are remembered after restarting the shell.
+The panel opens on a compact watchlist; longer lists use two columns. Open
+**Chart** for the selected instrument and **Watchlist** to return. Each view
+fits without scrolling. Your sort order is remembered after restarting the shell.
 Hover over the chart to inspect a sampled price and timestamp, or press **I**
 and use the arrow keys. Escape returns to the watchlist controls.
 

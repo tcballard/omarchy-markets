@@ -22,7 +22,10 @@ Panel {
   property int setupCursor: 0
   property bool keyboardCursor: false
   property bool managing: false
+  property string managerSection: "symbols"
+  property bool chartView: false
   readonly property bool detailsExpanded: hostWidget ? hostWidget.chartVisible : true
+  readonly property bool displayingDetails: chartView && detailsExpanded
   property string managerMessage: ""
   property double nowMs: Date.now()
 
@@ -161,10 +164,10 @@ Panel {
   function open() {
     nowMs = Date.now()
     managing = false
+    chartView = false
     managerMessage = ""
     syncSelection()
     root.controller.show()
-    panelScroll.contentY = 0
     Qt.callLater(function() { keyCatcher.forceActiveFocus() })
     if (service && typeof service.refreshIfStale === "function") service.refreshIfStale()
   }
@@ -186,6 +189,10 @@ Panel {
       managerMessage = ""
       return
     }
+    if (displayingDetails) {
+      chartView = false
+      return
+    }
     close()
   }
 
@@ -199,14 +206,13 @@ Panel {
     if (setupRequired && !managing) {
       var setupCount = profiles.length + 1
       setupCursor = (setupCursor + delta + setupCount) % setupCount
-      Qt.callLater(root.revealSetupSelection)
       return
     }
     if (managing) {
+      managerSection = "symbols"
       if (symbols.length === 0) return
       selectedSymbol = symbols[(selectedIndex + delta + symbols.length) % symbols.length]
       keyboardCursor = true
-      Qt.callLater(root.revealManagerSelection)
       return
     }
     if (symbols.length === 0) return
@@ -214,12 +220,12 @@ Panel {
     var index = displaySymbols.indexOf(focusedSymbol)
     selectedSymbol = displaySymbols[(index + delta + displaySymbols.length) % displaySymbols.length]
     requestFocusedHistory()
-    Qt.callLater(root.revealSelection)
   }
 
   function moveRange(delta) {
     if (setupRequired || managing || focusedSymbol === "") return
     setDetailsExpanded(true)
+    chartView = true
     var options = MarketModel.rangeOptions()
     var index = 0
     for (var cursor = 0; cursor < options.length; cursor += 1) {
@@ -239,37 +245,9 @@ Panel {
       symbolInput.forceActiveFocus()
       return
     }
+    chartView = true
+    setDetailsExpanded(true)
     requestFocusedHistory()
-  }
-
-  function revealItem(item) {
-    if (!panelScroll) return
-    if (!item) return
-    var mapped = item.mapToItem(contentColumn, 0, 0)
-    var top = mapped.y
-    var bottom = top + item.height
-    var viewportTop = panelScroll.contentY
-    var viewportBottom = viewportTop + panelScroll.height
-    var maximum = Math.max(0, panelScroll.contentHeight - panelScroll.height)
-    if (top < viewportTop)
-      panelScroll.contentY = Math.max(0, Math.min(top, maximum))
-    else if (bottom > viewportBottom)
-      panelScroll.contentY = Math.max(0, Math.min(bottom - panelScroll.height, maximum))
-  }
-
-  function revealSetupSelection() {
-    revealItem(setupCursor < profiles.length
-      ? profileRepeater.itemAt(setupCursor) : startCustomButton)
-  }
-
-  function revealSelection() {
-    if (!watchlist || selectedIndex < 0) return
-    revealItem(watchlist.itemAtIndex(displaySymbols.indexOf(focusedSymbol)))
-  }
-
-  function revealManagerSelection() {
-    if (!managerRepeater || selectedIndex < 0) return
-    revealItem(managerRepeater.itemAt(selectedIndex))
   }
 
   function inspectSymbol(symbol) {
@@ -279,7 +257,7 @@ Panel {
   }
 
   function requestFocusedHistory() {
-    if (!detailsExpanded || focusedSymbol === "" || !dataEnabled) return
+    if (!displayingDetails || focusedSymbol === "" || !dataEnabled) return
     if (service && typeof service.requestHistory === "function")
       service.requestHistory(focusedSymbol, selectedRange)
   }
@@ -291,20 +269,20 @@ Panel {
   }
 
   function toggleDetails() {
-    var expanded = !detailsExpanded
+    var expanded = !displayingDetails
+    chartView = expanded
     setDetailsExpanded(expanded)
     if (expanded) Qt.callLater(root.requestFocusedHistory)
-    else panelScroll.contentY = 0
     Qt.callLater(function() { keyCatcher.forceActiveFocus() })
   }
 
   function inspectChart() {
     if (setupRequired || managing) return
-    var wasExpanded = detailsExpanded
+    var wasExpanded = displayingDetails
+    chartView = true
     setDetailsExpanded(true)
     Qt.callLater(function() {
       if (!wasExpanded) root.requestFocusedHistory()
-      root.revealItem(historyChart)
       historyChart.focusChart()
     })
   }
@@ -312,7 +290,6 @@ Panel {
   function cycleSort() {
     var modes = ["saved", "gainers", "losers"]
     if (hostWidget) hostWidget.setSortMode(modes[(modes.indexOf(sortMode) + 1) % modes.length])
-    Qt.callLater(root.revealSelection)
   }
 
   function handleWatchlistResult(result) {
@@ -324,11 +301,12 @@ Panel {
     if (hostWidget) handleWatchlistResult(hostWidget.selectWatchlist(id))
   }
 
-  function cycleWatchlist() {
+  function cycleWatchlist(direction) {
     var lists = watchlistLibrary.lists
     if (lists.length < 2) return
     var index = WatchlistModel.indexOf(lists, watchlistLibrary.activeId)
-    selectWatchlist(lists[(index + 1) % lists.length].id)
+    var step = direction === -1 ? -1 : 1
+    selectWatchlist(lists[(index + step + lists.length) % lists.length].id)
   }
 
   function pinFocused() {
@@ -396,10 +374,13 @@ Panel {
   }
 
   function managerShortcut(text) {
-    if (text === "a" || text === "A") symbolInput.forceActiveFocus()
+    if (text === "a" || text === "A") {
+      managerSection = "symbols"
+      Qt.callLater(function() { symbolInput.forceActiveFocus() })
+    }
     else if (text === "n" || text === "N") {
-      watchlistEditor.focusName()
-      Qt.callLater(function() { root.revealItem(watchlistEditor) })
+      managerSection = "lists"
+      Qt.callLater(function() { watchlistEditor.focusName() })
     }
     else if (text === "x" || text === "X") root.removeManagedSymbol(root.focusedSymbol)
     else if (text === "[") root.moveManagedSymbol(root.focusedSymbol, root.selectedIndex - 1)
@@ -467,8 +448,10 @@ Panel {
       Qt.callLater(root.requestFocusedHistory)
   }
 
-  onManagingChanged: if (panelScroll) panelScroll.contentY = 0
-  onSetupRequiredChanged: if (panelScroll) panelScroll.contentY = 0
+  onManagingChanged: if (managing) managerSection = "symbols"
+  onDisplayingDetailsChanged: if (!displayingDetails && root.opened) {
+    historyChart.finishInspection()
+  }
 
   KeyboardPanel {
     id: panel
@@ -480,7 +463,7 @@ Panel {
     centerOnBar: false
     focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(Style.space(620))
-    // Keep long watchlists and expanded details inside a compact scrolling card.
+    // Views fit separately; never stack the full watchlist above chart details.
     readonly property real maximumPopupHeight: Math.min(Style.space(560),
       panel.availableCardHeight > 0 ? Math.floor(panel.availableCardHeight * 0.75) : Style.space(560))
     contentHeight: Math.min(maximumPopupHeight,
@@ -528,30 +511,21 @@ Panel {
         else if (text === "m" || text === "M") root.managing = true
       }
 
-      Flickable {
-        id: panelScroll
-        objectName: "marketsScroll"
+      Item {
+        id: panelContent
+        objectName: "marketsContent"
         anchors.fill: parent
         anchors.bottomMargin: panel.footerReserve
-        contentWidth: width
-        contentHeight: contentColumn.implicitHeight
         clip: true
-        boundsBehavior: Flickable.StopAtBounds
-        flickableDirection: Flickable.VerticalFlick
-        interactive: contentHeight > height
-        ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
-
-        onContentHeightChanged: contentY = Math.max(0, Math.min(contentY, contentHeight - height))
-        onHeightChanged: contentY = Math.max(0, Math.min(contentY, contentHeight - height))
 
         Column {
           id: contentColumn
-          // Keep a stable gutter: content height must not change its own width
-          // through scrollbar visibility and trigger a wrapping/height loop.
-          width: Math.max(0, panelScroll.width - Style.space(12))
-          spacing: Style.space(12)
+          objectName: "marketsContentColumn"
+          width: panelContent.width
+          spacing: Style.space(8)
 
           Row {
+            objectName: "marketHeader"
             width: parent.width
             height: Math.max(titleBlock.implicitHeight, headerActions.implicitHeight)
 
@@ -561,6 +535,7 @@ Panel {
               spacing: Style.space(2)
 
               Text {
+                visible: !root.displayingDetails
                 textFormat: Text.PlainText
                 text: "Omarchy Markets"
                 color: root.foreground
@@ -617,25 +592,32 @@ Panel {
             }
           }
 
-          Flow {
-            visible: root.watchlistLibrary.lists.length > 1
+          Row {
+            visible: root.watchlistLibrary.lists.length > 1 && !root.displayingDetails
             width: parent.width
             spacing: Style.space(6)
-
-            Repeater {
-              model: root.watchlistLibrary.lists
-              Button {
-                required property var modelData
-                text: modelData.name.length > 18 ? modelData.name.slice(0, 17) + "…" : modelData.name
-                foreground: root.foreground
-                selected: modelData.id === root.watchlistLibrary.activeId
-                bordered: selected
-                tooltipText: modelData.name + " · " + modelData.symbols.length + " symbols (W: next list)"
-                Accessible.role: Accessible.Button
-                Accessible.name: "Switch to watchlist " + modelData.name
-                Accessible.onPressAction: root.selectWatchlist(modelData.id)
-                onClicked: root.selectWatchlist(modelData.id)
-              }
+            Button {
+              text: "‹"
+              foreground: root.foreground
+              Accessible.name: "Previous watchlist"
+              onClicked: root.cycleWatchlist(-1)
+              Accessible.onPressAction: root.cycleWatchlist(-1)
+            }
+            Button {
+              text: "Watchlist: " + (root.watchlistName.length > 24
+                ? root.watchlistName.slice(0, 23) + "…" : root.watchlistName)
+              foreground: root.foreground
+              tooltipText: "Next watchlist (W)"
+              Accessible.name: root.watchlistName + ". Next watchlist."
+              onClicked: root.cycleWatchlist()
+              Accessible.onPressAction: root.cycleWatchlist()
+            }
+            Button {
+              text: "›"
+              foreground: root.foreground
+              Accessible.name: "Next watchlist"
+              onClicked: root.cycleWatchlist()
+              Accessible.onPressAction: root.cycleWatchlist()
             }
           }
 
@@ -654,7 +636,7 @@ Panel {
             id: setupView
             visible: root.setupRequired && !root.managing
             width: parent.width
-            spacing: Style.space(12)
+            spacing: Style.space(8)
 
             BorderSurface {
               width: parent.width
@@ -663,7 +645,7 @@ Panel {
               radius: Math.max(Style.cornerRadius, Style.space(16))
               color: Style.normalFillFor(root.foreground, Omarchy.Color.accent, Omarchy.Color.urgent)
               borderSpec: Border.controlSpec("normal", root.foreground, Omarchy.Color.accent)
-              padding: Style.space(16)
+              padding: Style.space(10)
 
               Column {
                 id: setupIntro
@@ -691,12 +673,17 @@ Panel {
                   text: "Profiles are editable starting points. Choosing one enables direct best-effort requests for its public symbols; there are no accounts or trades."
                   color: root.dim
                   font.family: root.fontFamily
-                  font.pixelSize: Style.font.body
+                  font.pixelSize: Style.font.bodySmall
                 }
               }
             }
 
-            Repeater {
+            Grid {
+              width: parent.width
+              columns: 2
+              columnSpacing: Style.space(8)
+              rowSpacing: Style.space(8)
+              Repeater {
               id: profileRepeater
               model: root.profiles
 
@@ -704,7 +691,7 @@ Panel {
                 id: profileCard
                 required property var modelData
                 required property int index
-                width: setupView.width
+                width: (setupView.width - Style.space(8)) / 2
                 implicitHeight: profileContent.implicitHeight + contentTopInset + contentBottomInset
                 height: implicitHeight
                 radius: Math.max(Style.cornerRadius, Style.space(13))
@@ -715,7 +702,7 @@ Panel {
                   : "transparent"
                 borderSpec: Border.controlSpec(root.setupCursor === index ? "focus" : "normal",
                   root.foreground, Omarchy.Color.accent)
-                padding: Style.space(12)
+                padding: Style.space(8)
                 Accessible.role: Accessible.Button
                 Accessible.name: modelData.name + ". " + modelData.description
                 Accessible.description: "Choose this profile and enable market data"
@@ -750,6 +737,8 @@ Panel {
                       textFormat: Text.PlainText
                       text: profileCard.modelData.description
                         + (profileCard.modelData.id === "meme-coins" ? " Highly speculative." : "")
+                      maximumLineCount: 1
+                      elide: Text.ElideRight
                       color: root.dim
                       font.family: root.fontFamily
                       font.pixelSize: Style.font.caption
@@ -759,6 +748,8 @@ Panel {
                   Button {
                     id: chooseProfileButton
                     text: "Choose"
+                    tooltipText: profileCard.modelData.description
+                      + (profileCard.modelData.id === "meme-coins" ? " Highly speculative." : "")
                     foreground: root.foreground
                     bordered: true
                     Accessible.role: Accessible.Button
@@ -778,6 +769,7 @@ Panel {
                 }
               }
             }
+            }
 
             Button {
               id: startCustomButton
@@ -795,9 +787,31 @@ Panel {
 
           Column {
             id: managerView
+            objectName: "marketManager"
             visible: root.managing
             width: parent.width
-            spacing: Style.space(12)
+            spacing: Style.space(8)
+
+            Row {
+              spacing: Style.space(6)
+              Repeater {
+                model: ["symbols", "lists", "preferences"]
+                Button {
+                  required property string modelData
+                  text: modelData === "symbols" ? "Symbols" : modelData === "lists" ? "Watchlists" : "Preferences"
+                  foreground: root.foreground
+                  selected: root.managerSection === modelData
+                  onClicked: root.managerSection = modelData
+                  Accessible.name: "Manage " + modelData
+                  Accessible.onPressAction: root.managerSection = modelData
+                }
+              }
+            }
+
+            Column {
+              visible: root.managerSection === "lists"
+              width: parent.width
+              spacing: Style.space(8)
 
             Text {
               width: parent.width
@@ -829,8 +843,6 @@ Panel {
               onResultReady: function(result) { root.handleWatchlistResult(result) }
               onReturnFocus: keyCatcher.forceActiveFocus()
             }
-
-            PanelSeparator { foreground: root.foreground }
 
             Text {
               width: parent.width
@@ -867,17 +879,12 @@ Panel {
 
             PanelSeparator { foreground: root.foreground }
 
-            Text {
-              width: parent.width
-              textFormat: Text.PlainText
-              text: "WATCHLIST MANAGER"
-              color: root.dim
-              font.family: root.fontFamily
-              font.pixelSize: Style.font.caption
-              font.bold: true
-              font.letterSpacing: 1.1
             }
 
+            Column {
+              visible: root.managerSection === "symbols"
+              width: parent.width
+              spacing: Style.space(6)
             Text {
               width: parent.width
               wrapMode: Text.Wrap
@@ -885,7 +892,7 @@ Panel {
               text: "Add Yahoo-style public symbols, then reorder or remove them. Up to 12 symbols."
               color: root.dim
               font.family: root.fontFamily
-              font.pixelSize: Style.font.body
+              font.pixelSize: Style.font.caption
             }
 
             Row {
@@ -965,7 +972,12 @@ Panel {
               Accessible.name: text
             }
 
-            Repeater {
+            Grid {
+              width: parent.width
+              columns: root.symbols.length > 4 ? 3 : 1
+              columnSpacing: Style.space(6)
+              rowSpacing: Style.space(4)
+              Repeater {
               id: managerRepeater
               model: root.symbols
 
@@ -974,8 +986,8 @@ Panel {
                 required property string modelData
                 required property int index
                 readonly property bool selected: root.selectedIndex === index
-                width: managerView.width
-                height: Style.space(48)
+                width: (managerView.width - (parent.columns - 1) * parent.columnSpacing) / parent.columns
+                height: Style.space(40)
                 radius: 0
                 color: selected
                   ? Style.selectedFillFor(root.foreground, Omarchy.Color.accent, Omarchy.Color.urgent)
@@ -1034,7 +1046,7 @@ Panel {
                   Button {
                     id: removeButton
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "Remove"
+                    text: "×"
                     foreground: root.negativeColor
                     tooltipText: "Remove " + managerRow.modelData
                     Accessible.role: Accessible.Button
@@ -1045,6 +1057,13 @@ Panel {
                 }
               }
             }
+            }
+            }
+
+            Column {
+              visible: root.managerSection === "preferences"
+              width: parent.width
+              spacing: Style.space(8)
 
             Text {
               width: parent.width
@@ -1111,11 +1130,13 @@ Panel {
               }
             }
 
+            }
+
             Text {
               width: parent.width
               wrapMode: Text.Wrap
               textFormat: Text.PlainText
-              text: "Keyboard: ↑/↓ select · [/] reorder · P pin · X/Delete remove · A add · N name · W next list · M back"
+              text: "↑/↓ select · [/] reorder · P pin · Delete remove · A add · N name"
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
@@ -1126,13 +1147,14 @@ Panel {
             id: marketsView
             visible: !root.setupRequired && !root.managing
             width: parent.width
-            spacing: Style.space(12)
+            spacing: Style.space(8)
 
             Flow {
               width: parent.width
               spacing: Style.space(8)
 
               Button {
+                visible: !root.displayingDetails
                 text: "Order: " + (root.sortMode === "gainers" ? "Gainers first"
                   : root.sortMode === "losers" ? "Losers first" : "Saved")
                 foreground: root.foreground
@@ -1142,23 +1164,33 @@ Panel {
                 Accessible.onPressAction: root.cycleSort()
                 onClicked: root.cycleSort()
               }
+
+              Button {
+                objectName: "chartViewButton"
+                text: root.displayingDetails ? "← Watchlist" : "Chart · " + root.focusedSymbol
+                foreground: root.foreground
+                tooltipText: "Switch between watchlist and chart (D)"
+                Accessible.name: text
+                onClicked: root.toggleDetails()
+                Accessible.onPressAction: root.toggleDetails()
+              }
             }
 
-            ListView {
+            GridView {
               id: watchlist
               objectName: "marketWatchlist"
-              readonly property int rowHeight: Style.space(56)
-              readonly property int rowSpacing: 0
-              readonly property int rowsHeight: root.symbols.length * rowHeight
-                + Math.max(0, root.symbols.length - 1) * rowSpacing
+              visible: !root.displayingDetails
+              readonly property int columns: root.symbols.length > 6 ? 2 : 1
+              readonly property int rowHeight: Style.space(48)
               width: parent.width
-              height: rowsHeight
+              cellWidth: width / columns
+              cellHeight: rowHeight
+              height: Math.ceil(root.symbols.length / columns) * rowHeight
               clip: false
               interactive: false
               boundsBehavior: Flickable.StopAtBounds
               model: root.displaySymbols
               currentIndex: root.displaySymbols.indexOf(root.focusedSymbol)
-              spacing: rowSpacing
 
               delegate: BorderSurface {
                 id: quoteRow
@@ -1169,7 +1201,7 @@ Panel {
                 readonly property bool pinned: modelData === root.primarySymbol
                 readonly property bool stale: service.state === "stale"
                   || (quote && (quote.stale === true || quote.cached === true))
-                width: ListView.view.width
+                width: watchlist.cellWidth
                 height: watchlist.rowHeight
                 radius: Style.cornerRadius
                 color: inspected
@@ -1289,7 +1321,7 @@ Panel {
               }
             }
 
-            PanelSeparator { foreground: root.foreground }
+            PanelSeparator { visible: !root.displayingDetails; foreground: root.foreground }
 
             Text {
               objectName: "selectedQuoteTime"
@@ -1302,35 +1334,21 @@ Panel {
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
-              wrapMode: Text.Wrap
+              elide: Text.ElideRight
               Accessible.name: text
-            }
-
-            Button {
-              width: parent.width
-              text: (root.detailsExpanded ? "▾ Hide chart" : "▸ Show chart")
-                + (root.focusedSymbol ? " · " + root.focusedSymbol : "")
-              foreground: root.foreground
-              horizontalPadding: Style.space(8)
-              verticalPadding: Style.space(8)
-              tooltipText: "Show or hide chart details (D)"
-              Accessible.role: Accessible.Button
-              Accessible.name: (root.detailsExpanded ? "Hide" : "Show")
-                + " chart and statistics for " + root.focusedSymbol
-              Accessible.onPressAction: root.toggleDetails()
-              onClicked: root.toggleDetails()
             }
 
             BorderSurface {
               id: detailCard
-              visible: root.detailsExpanded
+              objectName: "marketDetails"
+              visible: root.displayingDetails
               width: parent.width
               implicitHeight: detailContent.implicitHeight + contentTopInset + contentBottomInset
               height: implicitHeight
               radius: 0
               color: "transparent"
               borderSpec: Border.none()
-              padding: Style.space(8)
+              padding: Style.space(4)
               Accessible.name: root.detailQuote
                 ? MarketModel.quoteAccessibilityLabel(root.detailQuote, root.nowMs)
                 : root.focusedSymbol + ", history unavailable"
@@ -1342,7 +1360,7 @@ Panel {
                 anchors.rightMargin: detailCard.contentRightInset
                 anchors.bottomMargin: detailCard.contentBottomInset
                 anchors.leftMargin: detailCard.contentLeftInset
-                spacing: Style.space(9)
+                spacing: Style.space(4)
 
                 Row {
                   width: parent.width
@@ -1393,7 +1411,7 @@ Panel {
                           root.detailQuote) : "—"
                       color: root.foreground
                       font.family: root.fontFamily
-                      font.pixelSize: Style.font.heading * 1.5
+                      font.pixelSize: Style.font.title
                       font.bold: true
                       elide: Text.ElideLeft
                     }
@@ -1406,7 +1424,7 @@ Panel {
                         ? root.directionArrow(root.detailQuote) + " "
                           + MarketModel.formatQuoteDelta(root.detailQuote.change,
                             root.detailQuote) + "  "
-                          + MarketModel.formatPercent(root.detailQuote.changePercent)
+                          + MarketModel.formatPercent(root.detailQuote.changePercent) + " vs close"
                         : "—"
                       color: root.movementColorFor(root.detailQuote)
                       font.family: root.fontFamily
@@ -1414,15 +1432,6 @@ Panel {
                       font.bold: true
                     }
 
-                    Text {
-                      width: parent.width
-                      textFormat: Text.PlainText
-                      text: "vs previous close"
-                      horizontalAlignment: Text.AlignRight
-                      color: root.dim
-                      font.family: root.fontFamily
-                      font.pixelSize: Style.font.caption
-                    }
                   }
                 }
 
@@ -1471,6 +1480,7 @@ Panel {
                   HistoryChart {
                     id: historyChart
                     objectName: "historyChart"
+                    plotHeight: Style.space(100)
                     anchors.fill: parent
                     visible: root.rangeResult.direction !== "unknown"
                     points: root.chartQuote ? root.chartQuote.sparkline : []
@@ -1605,8 +1615,7 @@ Panel {
         }
       }
 
-      // Reserve a fixed footer inside the host's padded content holder. The
-      // watchlist and chart scroll above it, including on short displays.
+      // Keep the provider footer visible beneath the current compact view.
       Text {
         id: dataFooter
         anchors.left: parent.left

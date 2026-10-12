@@ -21,10 +21,13 @@
   aligned column, and range controls inside the selected-instrument detail.
   The chart baseline and return both use the first plotted price; quote changes
   explicitly compare against previous close. The provider footer has reserved
-  space outside the scrolling viewport. The popup grows naturally up to 560
+  space beneath the current view. The popup grows naturally up to 560
   scaled pixels or three quarters of the host's available card height, whichever
-  is smaller; excess content scrolls within the card. Profiles remain setup and
-  management concerns.
+  is smaller. The watchlist and chart are separate views; more than six symbols
+  use two columns. A plain Item replaces the scroll container. Management has
+  Symbols, Watchlists and Preferences views; setup profiles use a two-column
+  grid. Opening always returns to the watchlist. Every visible view must fit,
+  including footer and host insets, rather than hiding overflow behind a scrollbar.
 - Chart inspection: pointer hover selects the nearest plotted sample. A separate
   focus scope entered with I or Inspect chart owns Left/Right, Home/End and
   Escape/Tab; ordinary panel arrows retain range selection. Painting and hit
@@ -51,7 +54,7 @@
   delete preserve other lists; deletion requires confirmation and retains at
   least one list; multiple monitors receive the host's updated inline settings;
   keyboard and pointer actions work; sorting preserves the inspected symbol;
-  restart restores the active list, sorting and chart visibility. Portable
+  restart restores the active list and sorting; opening shows the watchlist. Portable
   transition tests establish state behavior; live QML input/layout and host
   propagation remain separate checks in `docs/acceptance.md`.
 - Process-wide state: one singleton owns quote polling, last-good merging,
