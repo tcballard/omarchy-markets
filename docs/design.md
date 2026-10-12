@@ -21,7 +21,10 @@
   aligned column, and range controls inside the selected-instrument detail.
   The chart baseline and return both use the first plotted price; quote changes
   explicitly compare against previous close. The provider footer has reserved
-  space outside the scrolling viewport. Profiles remain setup and management concerns.
+  space outside the scrolling viewport. The popup grows naturally up to 560
+  scaled pixels or three quarters of the host's available card height, whichever
+  is smaller; excess content scrolls within the card. Profiles remain setup and
+  management concerns.
 - Chart inspection: pointer hover selects the nearest plotted sample. A separate
   focus scope entered with I or Inspect chart owns Left/Right, Home/End and
   Escape/Tab; ordinary panel arrows retain range selection. Painting and hit

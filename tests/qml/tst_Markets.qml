@@ -196,6 +196,60 @@ Item {
       compare(panel.opened, false)
     }
 
+    function test_panelHeightStaysCompactAndOverflowRemainsReachable() {
+      var host = widget()
+      host.settings = {symbols: "ACME,BRAVO,CHARLIE,DELTA,ECHO,FOXTROT,GOLF,HOTEL,INDIA,JULIET,KILO,LIMA",
+        primarySymbol: "ACME", dataEnabled: true, tickerPaused: true, chartVisible: true}
+      var panel = createTemporaryObject(panelComponent, scene, {hostWidget: host, marketService: fixtureService})
+      verify(panel !== null)
+      panel.open()
+      var popup = findChild(panel, "marketsPopup")
+      var scroll = findChild(panel, "marketsScroll")
+      var watchlist = findChild(panel, "marketWatchlist")
+      var keys = findChild(panel, "panelKeys")
+      tryCompare(keys, "activeFocus", true)
+      tryCompare(popup, "contentHeight", 510)
+      popup.availableCardHeight = 1000
+      tryCompare(popup, "contentHeight", 560, 1000, "large screens still use the compact absolute cap")
+      verify(scroll.contentHeight > scroll.height, "long lists and details scroll inside the height cap")
+
+      for (var i = 0; i < 11; i++) keyClick(Qt.Key_Down)
+      tryCompare(panel, "focusedSymbol", "LIMA")
+      tryVerify(function() { return scroll.contentY > 0 })
+      var lastRow = watchlist.itemAtIndex(11)
+      verify(lastRow !== null)
+      tryVerify(function() {
+        var position = lastRow.mapToItem(scroll.contentItem, 0, 0)
+        return position.y >= scroll.contentY - 1
+          && position.y + lastRow.height <= scroll.contentY + scroll.height + 1
+      }, 1000, "keyboard selection reveals the last row without enlarging the panel")
+
+      keyClick(Qt.Key_Down)
+      tryCompare(panel, "focusedSymbol", "ACME")
+      keyClick(Qt.Key_I)
+      var inspector = findChild(panel, "historyChart")
+      tryCompare(inspector, "activeFocus", true)
+      var chartPosition = inspector.mapToItem(scroll.contentItem, 0, 0)
+      verify(chartPosition.y >= scroll.contentY - 1)
+      verify(chartPosition.y + inspector.height <= scroll.contentY + scroll.height + 1,
+        "chart inspection remains reachable below a long watchlist")
+      compare(popup.contentHeight, 560)
+      keyClick(Qt.Key_Escape)
+      tryCompare(keys, "activeFocus", true)
+
+      popup.availableCardHeight = 300
+      tryCompare(popup, "contentHeight", 225, 1000, "shorter screens retain space outside the popup")
+      verify(scroll.height > 0)
+      verify(scroll.contentY <= scroll.contentHeight - scroll.height + 1)
+      host.settings = {symbols: "ACME", primarySymbol: "ACME", dataEnabled: true,
+        tickerPaused: true, chartVisible: false}
+      popup.availableCardHeight = 680
+      tryVerify(function() { return popup.contentHeight < 560 }, 1000,
+        "short collapsed lists use their natural height")
+      panel.close()
+      compare(panel.opened, false)
+    }
+
     function test_widgetNamedListsAndSetupReactToSettings() {
       var host = widget()
       verify(host.createWatchlist("Work", false).ok)

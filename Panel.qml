@@ -472,6 +472,7 @@ Panel {
 
   KeyboardPanel {
     id: panel
+    objectName: "marketsPopup"
     anchorItem: root.anchorItem
     owner: root.barIdentity
     bar: root.bar
@@ -479,7 +480,11 @@ Panel {
     centerOnBar: false
     focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(Style.space(620))
-    contentHeight: panel.fittedContentHeight(contentColumn.implicitHeight + footerReserve)
+    // Keep long watchlists and expanded details inside a compact scrolling card.
+    readonly property real maximumPopupHeight: Math.min(Style.space(560),
+      panel.availableCardHeight > 0 ? Math.floor(panel.availableCardHeight * 0.75) : Style.space(560))
+    contentHeight: Math.min(maximumPopupHeight,
+      panel.fittedContentHeight(contentColumn.implicitHeight + footerReserve))
     readonly property real footerReserve: dataFooter.visible
       ? dataFooter.implicitHeight + Style.space(12) : 0
 
@@ -525,6 +530,7 @@ Panel {
 
       Flickable {
         id: panelScroll
+        objectName: "marketsScroll"
         anchors.fill: parent
         anchors.bottomMargin: panel.footerReserve
         contentWidth: width
@@ -1140,6 +1146,7 @@ Panel {
 
             ListView {
               id: watchlist
+              objectName: "marketWatchlist"
               readonly property int rowHeight: Style.space(56)
               readonly property int rowSpacing: 0
               readonly property int rowsHeight: root.symbols.length * rowHeight

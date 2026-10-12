@@ -2,6 +2,9 @@
 
 ## 0.5.0 — prepared, not yet released
 
+- Cap the popup at 560 scaled pixels or three quarters of the usable screen
+  height and scroll longer watchlists, chart details and management controls
+  inside it instead of filling the screen height.
 - Preserve significant digits in tiny nonzero quotes and changes; use index
   points throughout the ticker, panel, chart inspection and accessibility.
 - Separate fetch time from quote time, retain selected-quote age when the chart
