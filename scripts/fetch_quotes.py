@@ -392,6 +392,18 @@ def _nonnegative_meta_number(
     return number if number is not None and number >= 0 else None
 
 
+def _regular_session_bounds(meta: Mapping[str, Any]) -> tuple[str | None, str | None]:
+    periods = meta.get("currentTradingPeriod")
+    regular = periods.get("regular") if isinstance(periods, Mapping) else None
+    if not isinstance(regular, Mapping):
+        return None, None
+    start = _finite_number(regular.get("start"))
+    end = _finite_number(regular.get("end"))
+    if start is None or end is None or start <= 0 or not 0 < end - start <= 172800:
+        return None, None
+    return _utc_iso_from_epoch(start), _utc_iso_from_epoch(end)
+
+
 def parse_yahoo_chart(
     payload: Any,
     requested_symbol: str,
@@ -470,6 +482,7 @@ def parse_yahoo_chart(
     if observed_now is None or observed_now < 0:
         observed_now = time.time()
     session_state = _session_state(meta, float(observed_now))
+    session_start, session_end = _regular_session_bounds(meta)
     return {
         "symbol": requested_symbol,
         "name": name,
@@ -484,6 +497,8 @@ def parse_yahoo_chart(
         "change": change,
         "changePercent": change_percent,
         "marketTime": _utc_iso_from_epoch(meta.get("regularMarketTime")),
+        "regularSessionStart": session_start,
+        "regularSessionEnd": session_end,
         "regularMarketOpen": _meta_number(meta, "regularMarketOpen"),
         "dayLow": _meta_number(meta, "regularMarketDayLow", "dayLow"),
         "dayHigh": _meta_number(meta, "regularMarketDayHigh", "dayHigh"),
@@ -1206,6 +1221,8 @@ def _sanitize_fixture_quote(
         "change": change,
         "changePercent": change_percent,
         "marketTime": market_time,
+        "regularSessionStart": _valid_iso(raw.get("regularSessionStart")),
+        "regularSessionEnd": _valid_iso(raw.get("regularSessionEnd")),
         "regularMarketOpen": _finite_number(raw.get("regularMarketOpen")),
         "dayLow": _finite_number(raw.get("dayLow")),
         "dayHigh": _finite_number(raw.get("dayHigh")),

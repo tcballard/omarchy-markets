@@ -74,7 +74,8 @@ membership can drift, so it should never be treated as an endorsement.
   use the compact pinned-symbol presentation.
 - Keeps the watchlist first, with company names beneath symbols and aligned
   prices and daily changes. Chart ranges sit beside the selected instrument’s
-  larger chart below. Narrow panels hide row charts to keep names readable.
+  chart in a separate view. Longer lists use two columns; narrow quote cards
+  hide miniature charts to keep names readable. The panel has no scrolling.
 - Keeps Profiles in onboarding and management, so they accelerate setup without
   turning the normal market view into a configuration dashboard.
 - Inspects a row without silently changing the bar; pinning the selected symbol
@@ -87,6 +88,11 @@ membership can drift, so it should never be treated as an endorsement.
 - Shares one poller across monitors and stores a bounded last-good cache so a
   temporary outage does not turn known values into zeroes.
 - Uses symbols, arrows, signs, and text as well as colour for direction.
+- Uses points for index levels and changes, and preserves significant digits
+  for tiny crypto prices. GBP and UK pence remain distinct.
+- Labels the last fetch separately from each inspected quote's own timestamp,
+  including with the chart hidden. Pre-market/after-hours exchange status does
+  not change the displayed regular-session price into an extended-hours quote.
 
 ## Use
 
@@ -98,15 +104,15 @@ or **Rename**. Keep up to eight lists, each with a unique name of 1–32 charact
 and up to twelve symbols. Edits are saved automatically to the active list.
 Starting profiles replace the contents of that active list; other lists stay intact.
 
-Switch using the named buttons above the quotes or **W**. Switching also restores
+Switch using the watchlist selector above the quotes or **W**. Switching also restores
 the pinned symbol and leaves the market-data consent setting unchanged. **Delete
 list** requires confirmation; at least one list must remain.
 
 The **Order** button or **S** cycles saved order, daily percentage gainers and
 daily percentage losers. Missing changes stay at the bottom, ties keep saved
 order, and refreshed rankings keep the same instrument selected. Management
-and the bar ticker always use saved order. Sorting and chart visibility persist
-across restarts and apply to all your lists.
+and the bar ticker always use saved order. Sorting persists across restarts and
+applies to all your lists. The panel opens on the watchlist.
 
 In Manage, **N** focuses the name field. Enter saves a copy; Tab/Shift-Tab moves
 through its actions and Escape returns to panel navigation.
@@ -120,8 +126,8 @@ does not interpolate prices or fetch additional detail.
 
 Choose **Inspect chart**, press **I**, or click a chart point to focus inspection.
 Left/Right steps through samples, Home/End jumps to the first/last sample, and
-Escape or Tab returns to panel navigation. Outside inspection, Left/Right
-still changes the chart range. Changing the series or its data clears the
+Escape returns to the watchlist; Tab returns to panel navigation. Choose a range
+with its labelled button. Arrow keys never change the chart range. Changing the series or its data clears the
 previous keyboard marker. Missing timestamps read **Time unavailable**.
 
 | Input | Action |
@@ -132,10 +138,10 @@ previous keyboard marker. Missing timestamps read **Time unavailable**.
 | Click a watchlist row | Inspect that instrument |
 | Click **Pin to bar** | Make the inspected instrument primary |
 | Click **Manage** | Add, remove, or reorder the watchlist |
-| Up/Down or J/K | Move through profiles, manager rows, or the watchlist |
-| Left/Right | Expand the chart and change its range |
+| Up/Down or J/K | Select the item directly above/below in the visible grid |
+| Left/Right or H/L | Select the left/right neighbour in the same grid row; edges stop |
 | D | Show or hide the selected chart and statistics |
-| I | Focus chart inspection; arrows step through points, Home/End jumps, Escape/Tab returns |
+| I | Focus chart inspection; Left/Right steps through points, Home/End jumps, Escape returns to watchlist |
 | S | Cycle saved order, daily gainers and daily losers |
 | W | Switch to the next named watchlist |
 | Enter/Space | Choose the highlighted profile, focus custom entry, or inspect |
@@ -168,7 +174,7 @@ also exposes the manifest settings as an administrative fallback:
 | `tickerSpeed` | `24` | Scroll speed; zero disables motion |
 | `tickerPaused` | `false` | Persistent manual pause state |
 | `sortMode` | `saved` | Panel order: `saved`, `gainers`, or `losers`; never rewrites symbol order |
-| `chartVisible` | `true` | Persistent Show/Hide chart preference |
+| `chartVisible` | `true` | Stored chart enablement; opening starts on the watchlist |
 
 Named-list records (`watchlists`, `activeWatchlistId`) are managed by the panel
 inside the same widget entry. The flat symbol/profile/pin settings continue to
@@ -197,6 +203,16 @@ Requests contain the configured public symbols plus the selected history range.
 There is no API key, account, telemetry, hosted proxy, plugin daemon, or
 currency conversion. Values remain in each instrument's native Yahoo quote
 currency; London `.L` equities, for example, are commonly reported in pence.
+Index levels are shown in points rather than the provider's currency label.
+
+**Fetched** describes a request's completion snapshot, not a new market trade.
+The selected instrument separately shows its quote age; unknown times are
+labelled unavailable. Active/continuous quotes older than 30 minutes or twice
+the refresh interval (whichever is longer) are marked stale. Completed regular
+session bounds keep ordinary closing quotes valid while markets are closed;
+where those bounds are missing, the timestamp remains visible without an
+invented trading calendar. This is a conservative age warning, not a guarantee
+of freshness or a measured exchange delay. Quotes may be delayed.
 
 Yahoo's endpoint is undocumented and best effort. It has no published uptime or
 rate-limit guarantee, can return delayed or indicative data, and may change or
@@ -312,7 +328,9 @@ The marketplace badge uses the Omarchy icon from
 [omarchy-badges](https://github.com/tcballard/omarchy-badges), with attribution in
 [badge credits](assets/CREDITS.md).
 
-Chart details can be collapsed using **Hide chart** below the watchlist and
-restored with **Show chart** or **D**. The choice survives closing and reopening
-the panel until the plugin reloads. Selecting rows while collapsed keeps the
-chart closed and avoids requesting their history; the bar quote poller continues.
+Use **Chart**, **I** or **D** to enter the selected instrument's chart view.
+Use **Watchlist**, **D** or **Escape** to return. Enter from the watchlist opens
+the selected chart and focuses inspection. The two views do not
+stack or scroll. Selecting rows in the watchlist does not request history;
+the bar quote poller continues. Manage has separate Symbols, Watchlists and
+Preferences sections so its controls also fit without scrolling.

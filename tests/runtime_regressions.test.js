@@ -72,17 +72,6 @@ for (const sample of [
   if (sample.bg.a === 1) assert.ok(colors.contrastRatio(result, sample.bg) >= 4.5);
 }
 
-const scrolling = functions(panel, ["revealItem"], {
-  panelScroll: {contentY: 0, height: 300, contentHeight: 900}, contentColumn: {},
-});
-const item = (y, height) => ({height, mapToItem: () => ({y})});
-scrolling.revealItem(item(760, 100));
-assert.equal(scrolling.panelScroll.contentY, 560, "offscreen profile is brought into view");
-scrolling.revealItem(item(0, 100));
-assert.equal(scrolling.panelScroll.contentY, 0, "wrapping back to first profile scrolls up");
-scrolling.revealItem(item(850, 100));
-assert.equal(scrolling.panelScroll.contentY, 600, "scroll remains within content bounds");
-
 const model = {};
 vm.runInNewContext(read("MarketModel.js").replace(/^\.pragma library\s*/, ""), model);
 const watchlists = {MarketModel: model};
@@ -98,23 +87,100 @@ const paused = settings.normalizedSettingsPatch({tickerPaused: false}, structure
 assert.deepEqual(JSON.parse(JSON.stringify(paused)), {...previous, tickerPaused: false});
 const disabled = {...previous, dataEnabled: false};
 assert.equal(settings.normalizedSettingsPatch({}, disabled).dataEnabled, false);
-console.log("Helper isolation, popup contrast, keyboard scrolling and v0.3.3 settings regressions passed.");
+console.log("Helper isolation, popup contrast and v0.3.3 settings regressions passed.");
 
 const detailState = functions(panel, ["setDetailsExpanded", "toggleDetails", "requestFocusedHistory"], {
   detailsExpanded: true, focusedSymbol: "ACME", dataEnabled: true, selectedRange: "1mo",
-  panelScroll: {contentY: 250}, Qt: {callLater: callback => callback()},
+  chartView: true, Qt: {callLater: callback => callback()},
   keyCatcher: {forceActiveFocus() {}},
   service: {calls: [], requestHistory(symbol, range) { this.calls.push([symbol, range]); }},
 });
 detailState.root = detailState;
+Object.defineProperty(detailState, "displayingDetails", {get() { return this.chartView && this.detailsExpanded; }});
 detailState.hostWidget = {setChartVisible(value) { detailState.detailsExpanded = value; }};
 detailState.toggleDetails();
 assert.equal(detailState.detailsExpanded, false);
-assert.equal(detailState.panelScroll.contentY, 0);
+assert.equal(detailState.chartView, false, "returning to the watchlist replaces the chart view");
 detailState.requestFocusedHistory();
 assert.equal(detailState.service.calls.length, 0, "collapsed selection does not request history");
 detailState.focusedSymbol = "OTHER";
 detailState.toggleDetails();
 assert.equal(detailState.detailsExpanded, true);
+assert.equal(detailState.chartView, true);
 assert.deepEqual(detailState.service.calls, [["OTHER", "1mo"]], "expanding loads the current selection");
 console.log("Chart collapse and expansion regressions passed.");
+
+const navigation = functions(panel, ["gridNeighbour"], {});
+for (const [index, count, columns, dx, dy, expected] of [
+  [0, 12, 2, 1, 0, 1], [1, 12, 2, 0, 1, 3],
+  [3, 12, 2, -1, 0, 2], [2, 12, 2, 0, -1, 0],
+  [0, 12, 2, -1, 0, 0], [0, 12, 2, 0, -1, 0],
+  [1, 12, 2, 1, 0, 1], [11, 12, 2, 0, 1, 11],
+  [6, 7, 2, 1, 0, 6], [5, 7, 2, 0, 1, 5],
+  [2, 12, 3, 0, 1, 5], [5, 12, 3, -1, 0, 4],
+  [0, 6, 1, 1, 0, 0], [2, 6, 1, 0, 1, 3],
+  [0, 0, 2, 0, 1, -1],
+]) {
+  assert.equal(navigation.gridNeighbour(index, count, columns, dx, dy), expected,
+    `spatial neighbour from ${index} in ${columns} columns with (${dx},${dy})`);
+}
+console.log("Spatial grid navigation and bounded edges regressions passed.");
+
+// Run the shipped service response/age paths with a deterministic clock. No
+// process or network is started; these are provider snapshots, not live prices.
+let quoteClock = Date.parse("2026-10-12T15:00:00Z");
+class QuoteClock extends Date { static now() { return quoteClock; } }
+const lifecycle = {};
+vm.runInNewContext(read("ServiceLifecycle.js").replace(/^\.pragma library\s*/, ""), lifecycle);
+const quoteService = functions(service, ["mergeFreshQuotes", "completePartialErrors", "consumeResponse",
+  "expireQuoteAges", "failRequest", "conciseError"], {
+  Date: QuoteClock, MarketModel: model, ServiceLifecycle: lifecycle,
+  _requestActive: true, _activeGeneration: 1, _requestTimedOut: false,
+  _activeSymbolsKey: "ACME", symbolsKey: "ACME", configuredSymbols: ["ACME"],
+  quotes: [], refreshIntervalSec: 900, pollingAllowed: true, consecutiveFailures: 0, revision: 0,
+  settleActiveRequest() {}, syncOneDayHistory() {}, runQueuedRefresh() {},
+});
+Object.defineProperty(quoteService, "hasData", {get: () => quoteService.quotes.length > 0});
+const oldQuote = {symbol: "ACME", currency: "USD", regularMarketPrice: 123,
+  marketTime: "2026-10-09T20:00:00Z", sessionState: "regular",
+  regularSessionStart: "2026-10-12T13:30:00Z", regularSessionEnd: "2026-10-12T20:00:00Z"};
+function deliverQuotes(quotes, errors = []) {
+  quoteService.consumeResponse(1, 0, JSON.stringify({schemaVersion: 1, provider: "Fictional fixture",
+    generatedAt: new Date(quoteClock).toISOString(), quotes, errors}), "");
+}
+deliverQuotes([oldQuote]);
+assert.equal(quoteService.state, "stale", "successful fetch cannot make a three-day-old open-market quote fresh");
+assert.equal(quoteService.quotes[0].stale, true);
+assert.match(quoteService.lastError, /older than expected/);
+assert.equal(quoteService.consecutiveFailures, 0, "quote age is not a transport failure");
+const freshQuote = {...oldQuote, marketTime: "2026-10-12T14:59:00Z"};
+deliverQuotes([freshQuote]);
+assert.equal(quoteService.state, "ready", "a new quote clears the stale flag");
+assert.equal(quoteService.quotes[0].stale, false);
+const status = functions(panel, ["stateLabel"], {
+  MarketModel: model, dataEnabled: true, symbols: ["ACME"], service: quoteService, nowMs: quoteClock,
+});
+assert.equal(status.stateLabel(), "Fetched just now", "the header describes fetch time explicitly");
+quoteClock += 31 * 60 * 1000;
+quoteService.expireQuoteAges();
+assert.equal(quoteService.state, "stale", "aging/resume marks an old quote without another fetch");
+assert.equal(quoteService.quotes[0].stale, true);
+quoteClock = Date.parse("2026-10-12T15:00:00Z");
+quoteService.configuredSymbols = ["ACME", "OTHER"];
+quoteService.symbolsKey = quoteService._activeSymbolsKey = "ACME,OTHER";
+deliverQuotes([freshQuote, {...oldQuote, symbol: "OTHER"}]);
+assert.equal(quoteService.state, "partial");
+assert.deepEqual(Array.from(quoteService.quotes, q => q.stale), [false, true]);
+deliverQuotes([freshQuote], [{symbol: "OTHER", code: "offline", message: "Offline"}]);
+assert.equal(quoteService.state, "partial");
+assert.equal(quoteService.quotes[1].regularMarketPrice, 123, "partial errors preserve last-good values");
+quoteService.failRequest("Offline", "offline");
+quoteService.expireQuoteAges();
+assert.equal(quoteService.state, "stale", "the age timer cannot recover a failed fetch");
+quoteService.configuredSymbols = ["ACME"];
+quoteService.symbolsKey = quoteService._activeSymbolsKey = "ACME";
+deliverQuotes([{...oldQuote, sessionState: "closed", regularSessionStart: "2026-10-09T13:30:00Z",
+  regularSessionEnd: "2026-10-09T20:00:00Z"}]);
+assert.equal(quoteService.state, "ready", "last completed session does not expire over a weekend");
+assert.equal(quoteService.quotes[0].stale, false);
+console.log("Quote age, fetch labeling, partial responses, recovery and closed-session regressions passed.");

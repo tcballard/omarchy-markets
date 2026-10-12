@@ -1,12 +1,26 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 — prepared, not yet released
 
+- Make arrows follow the visible grid: Left/Right stays in the row, Up/Down
+  stays in the column, and edges do not wrap. Enter opens the selected chart;
+  Escape returns to the watchlist. Arrows no longer open charts or change ranges.
+- Keep the popup compact without scrolling: show the watchlist and selected
+  chart in separate views, use two columns for longer lists, and split management
+  into Symbols, Watchlists and Preferences. All controls remain visible.
+- Preserve significant digits in tiny nonzero quotes and changes; use index
+  points throughout the ticker, panel, chart inspection and accessibility.
+- Separate fetch time from quote time, retain selected-quote age when the chart
+  is hidden, and flag unexpectedly old active-session quotes even after a
+  successful request. Keep valid closing quotes over weekends and holidays.
+- Label regular-session prices explicitly, replace ambiguous "today" row labels
+  with "vs close", and disclose that quotes may be delayed.
 - Inspect loaded chart points with a pointer or keyboard, showing the sampled
   price and UTC timestamp. I enters inspection; Left/Right, Home/End and Escape
   navigate without changing the chart range or current quote.
 - Add an offscreen Qt Quick smoke job that loads the shipped UI against small
   host stubs and exercises pointer/key input, focus and settings bindings.
+- Run the same smoke suite in a separate, version-checked Qt 6.12.0 CI job.
 - Accept Qt-wrapped arrays when restoring named lists and chart data; avoid
   pausing a stopped ticker and plotting a missing previous close as zero.
 - Qualify Omarchy's theme colors to avoid collisions with Qt's Color type,
@@ -16,7 +30,7 @@
   symbols, order and pinned quote without changing market-data consent.
 - Sort the panel by daily percentage gainers or losers without changing saved
   order or the ticker. Keep the inspected symbol selected as prices reorder.
-- Remember chart visibility and sort preference across shell restarts.
+- Remember sort preference across shell restarts; always open on the watchlist.
 - Align the Add button with the symbol field using the shared Button.
   Thanks to Shawn Yeager for the original fix in #11, included through #12.
 

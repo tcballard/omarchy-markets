@@ -138,6 +138,25 @@ class SymbolTests(unittest.TestCase):
 
 
 class ParserTests(unittest.TestCase):
+    def test_regular_session_bounds_are_optional_bounded_and_cache_compatible(self):
+        payload = yahoo_payload(meta={"currentTradingPeriod": {
+            "regular": {"start": 1_700_000_000, "end": 1_700_023_400}}})
+        quote = fetch_quotes.parse_yahoo_chart(payload, "AAPL")
+        restored = fetch_quotes._sanitize_fixture_quote(quote)
+        self.assertEqual(restored["regularSessionStart"], quote["regularSessionStart"])
+        self.assertEqual(restored["regularSessionEnd"], quote["regularSessionEnd"])
+        for period in [None, [], {}, {"start": -1, "end": 100},
+                       {"start": 200, "end": 100}, {"start": 1, "end": 200000},
+                       {"start": float("nan"), "end": float("inf")}]:
+            with self.subTest(period=period):
+                parsed = fetch_quotes.parse_yahoo_chart(yahoo_payload(meta={
+                    "currentTradingPeriod": {"regular": period}}), "AAPL")
+                self.assertIsNone(parsed["regularSessionStart"])
+                self.assertIsNone(parsed["regularSessionEnd"])
+        legacy = fetch_quotes._sanitize_fixture_quote({"symbol": "ACME", "regularMarketPrice": 10})
+        self.assertIsNone(legacy["regularSessionStart"])
+        self.assertIsNone(legacy["regularSessionEnd"])
+
     def test_yahoo_response_is_reduced_to_exact_quote_schema(self):
         quote = fetch_quotes.parse_yahoo_chart(yahoo_payload(), "AAPL")
         self.assertEqual(
@@ -156,6 +175,8 @@ class ParserTests(unittest.TestCase):
                 "change",
                 "changePercent",
                 "marketTime",
+                "regularSessionStart",
+                "regularSessionEnd",
                 "regularMarketOpen",
                 "dayLow",
                 "dayHigh",
@@ -228,6 +249,8 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(quote["instrumentType"], "EQUITY")
         self.assertEqual(quote["marketState"], "regular")
         self.assertEqual(quote["sessionState"], "regular")
+        self.assertEqual(quote["regularSessionStart"], "1970-01-01T00:01:40Z")
+        self.assertEqual(quote["regularSessionEnd"], "1970-01-01T00:03:20Z")
         self.assertEqual(quote["regularMarketOpen"], 100.5)
         self.assertEqual(quote["dayLow"], 99.75)
         self.assertEqual(quote["dayHigh"], 103.25)

@@ -194,7 +194,7 @@ BarWidget {
     if (stateText === "LOADING") return "Loading market quotes."
     if (stateText === "CACHED") return "Showing cached market data."
     if (stateText === "STALE") return "Showing stale last-known market data."
-    if (stateText === "PARTIAL") return "Some watchlist quotes are unavailable."
+    if (stateText === "PARTIAL") return "Some watchlist quotes are stale or unavailable."
     if (stateText === "CLOSED") return "The primary market is closed."
     if (stateText === "PAUSED") return "Market polling is paused while this widget is inactive."
     if (stateText === "ERROR") {
@@ -202,14 +202,15 @@ BarWidget {
         ? String(marketService.lastError) : "Market data is unavailable."
     }
     if (displayQuote) return MarketModel.changeAccessibilityLabel(displayQuote)
-      + " · " + MarketModel.formatFreshness(displayQuote.marketTime)
+      + " · " + MarketModel.quoteSessionLabel(displayQuote)
+      + " · " + MarketModel.quoteTimeLabel(displayQuote)
     return "Market data ready."
   }
 
   readonly property string singleBarText: {
     var pieces = [displayQuote ? String(displayQuote.symbol) : (primarySymbol || "MARKETS")]
     if (displayQuote && showPrice)
-      pieces.push(MarketModel.formatPrice(displayQuote.regularMarketPrice, displayQuote.currency))
+      pieces.push(MarketModel.formatQuotePrice(displayQuote.regularMarketPrice, displayQuote))
     if (displayQuote) pieces.push(quoteChangeText(displayQuote))
     if (stateText !== "") pieces.push(stateText)
     return pieces.join("  ")
@@ -217,7 +218,7 @@ BarWidget {
   readonly property string tickerBarText: validQuotes.length > 0
     ? validQuotes.map(function(quote) {
         var pieces = [String(quote.symbol)]
-        if (showPrice) pieces.push(MarketModel.formatPrice(quote.regularMarketPrice, quote.currency))
+        if (showPrice) pieces.push(MarketModel.formatQuotePrice(quote.regularMarketPrice, quote))
         pieces.push(quoteChangeText(quote))
         return pieces.join(" ")
       }).join(" · ") + (stateText !== "" ? " · " + stateText : "")
@@ -534,7 +535,7 @@ BarWidget {
         visible: root.displayQuote && root.showPrice
         textFormat: Text.PlainText
         text: root.displayQuote
-          ? MarketModel.formatPrice(root.displayQuote.regularMarketPrice, root.displayQuote.currency) : ""
+          ? MarketModel.formatQuotePrice(root.displayQuote.regularMarketPrice, root.displayQuote) : ""
         color: root.barForeground
         font.family: button.fontFamily
         font.pixelSize: button.fontSize
@@ -624,8 +625,8 @@ BarWidget {
                 visible: root.showPrice
                 anchors.verticalCenter: parent.verticalCenter
                 textFormat: Text.PlainText
-                text: MarketModel.formatPrice(
-                  parent.modelData.regularMarketPrice, parent.modelData.currency)
+                text: MarketModel.formatQuotePrice(
+                  parent.modelData.regularMarketPrice, parent.modelData)
                 color: root.barForeground
                 font.family: button.fontFamily
                 font.pixelSize: button.fontSize

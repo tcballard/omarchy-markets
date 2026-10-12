@@ -469,11 +469,14 @@ function decimalPlacesForPrice(value) {
   var magnitude = Math.abs(value);
   if (magnitude === 0 || magnitude >= 1) return 2;
   if (magnitude >= 0.01) return 4;
-  return 6;
+  // Preserve at least four significant digits for tiny crypto prices, without
+  // creating unbounded labels. Smaller magnitudes use scientific notation.
+  return Math.min(20, Math.max(6, 3 - Math.floor(Math.log(magnitude) / Math.LN10)));
 }
 
 function groupedFixed(value, decimalPlaces) {
   var fixed = value.toFixed(decimalPlaces);
+  if (/e/i.test(fixed)) return fixed;
   var pieces = fixed.split(".");
   var whole = pieces[0];
   var grouped = "";
@@ -490,7 +493,10 @@ function groupedFixed(value, decimalPlaces) {
 
 function formatMagnitude(value, currency, decimalPlaces) {
   var parts = currencyParts(currency);
-  return parts.prefix + groupedFixed(Math.abs(value), decimalPlaces) + parts.suffix;
+  var magnitude = Math.abs(value);
+  var text = magnitude > 0 && (magnitude < 1e-17 || Number(magnitude.toFixed(decimalPlaces)) === 0)
+    ? magnitude.toExponential(3) : groupedFixed(magnitude, decimalPlaces);
+  return parts.prefix + text + parts.suffix;
 }
 
 function formatPrice(value, currency) {
@@ -512,6 +518,28 @@ function formatDelta(value, currency, showPositiveSign) {
   if (number < 0) sign = MINUS_SIGN;
   else if (number > 0 && showPositiveSign !== false) sign = "+";
   return sign + formatMagnitude(number, currency, decimalPlacesForPrice(number));
+}
+
+function isIndexQuote(quote) {
+  if (!quote || typeof quote !== "object") return false;
+  var type = safeText(quote.instrumentType, 40).toLowerCase();
+  return type === "index" || (type === "" && /^\^/.test(String(quote.symbol || "")));
+}
+
+function quoteUnitLabel(quote) {
+  return isIndexQuote(quote) ? "Index points" : normalizeCurrency(quote && quote.currency);
+}
+
+function formatQuotePrice(value, quote) {
+  var index = isIndexQuote(quote);
+  var text = formatPrice(value, index ? "" : (quote && quote.currency));
+  return index && text !== MISSING_VALUE ? text + " pts" : text;
+}
+
+function formatQuoteDelta(value, quote) {
+  var index = isIndexQuote(quote);
+  var text = formatDelta(value, index ? "" : (quote && quote.currency));
+  return index && text !== MISSING_VALUE ? text + " pts" : text;
 }
 
 function formatPercent(value, showPositiveSign) {
@@ -613,31 +641,69 @@ function asOfLabel(value, nowValue) {
   return prefix + freshness.toLowerCase();
 }
 
-function formattedRange(low, high, currency) {
+function quoteSessionLabel(quote) {
+  return quoteSessionState(quote) === "continuous" ? "24-hour market quote" : "Regular-session quote";
+}
+
+function quoteTimeLabel(quote, nowValue) {
+  var timestamp = timestampMilliseconds(quote && quote.marketTime);
+  var now = timestampMilliseconds(nowValue) || Date.now();
+  if (timestamp === null) return "Quote time unavailable";
+  if (timestamp > now + 300000) return "Quote time ahead of local clock";
+  return asOfLabel(quote, now);
+}
+
+function quoteAgeStatus(quote, nowValue, refreshSeconds) {
+  if (!quote || typeof quote !== "object") return "unknown";
+  if (quote.stale === true || quote.cached === true) return "stale";
+  var timestamp = timestampMilliseconds(quote.marketTime);
+  var now = timestampMilliseconds(nowValue) || Date.now();
+  if (timestamp === null || timestamp > now + 300000) return "unknown";
+  // A conservative stale-data threshold, not a promise of exchange latency.
+  // Respect the selected polling cadence and allow ordinary delayed feeds.
+  var tolerance = Math.max(1800, 2 * boundedInteger(refreshSeconds, 900, 300, 3600)) * 1000;
+  var state = quoteSessionState(quote);
+  if (state === "continuous") return now - timestamp > tolerance ? "stale" : "current";
+  var start = timestampMilliseconds(quote.regularSessionStart);
+  var end = timestampMilliseconds(quote.regularSessionEnd);
+  var knownSession = start !== null && end !== null && end > start && end - start <= 172800000;
+  // Use the completed regular session, not wall-clock age, for closing prices.
+  // A Friday close remains useful over weekends and holidays. Future session
+  // bounds do not prove when the previous session ended.
+  if (knownSession && now >= end)
+    return end - timestamp > tolerance ? "stale" : "closed";
+  if (state === "open") {
+    if (knownSession && timestamp < start && now < start + tolerance) return "awaiting";
+    return now - timestamp > tolerance ? "stale" : "current";
+  }
+  if (["closed", "pre", "post", "halted"].indexOf(state) >= 0) return "closed";
+  return "unknown";
+}
+
+function formattedRange(low, high, quote) {
   var normalizedLow = finiteNumber(low);
   var normalizedHigh = finiteNumber(high);
   if (normalizedLow === null || normalizedHigh === null) return MISSING_VALUE;
-  return formatPrice(normalizedLow, currency) + " – " + formatPrice(normalizedHigh, currency);
+  return formatQuotePrice(normalizedLow, quote) + " – " + formatQuotePrice(normalizedHigh, quote);
 }
 
 function statRows(quote) {
   var value = quote !== null && typeof quote === "object" ? quote : {};
-  var currency = value.currency;
   return [
     {
       id: "open",
       label: "Open",
-      value: formatPrice(value.regularMarketOpen, currency)
+      value: formatQuotePrice(value.regularMarketOpen, value)
     },
     {
       id: "day-range",
       label: "Day range",
-      value: formattedRange(value.dayLow, value.dayHigh, currency)
+      value: formattedRange(value.dayLow, value.dayHigh, value)
     },
     {
       id: "52-week-range",
       label: "52-week range",
-      value: formattedRange(value.fiftyTwoWeekLow, value.fiftyTwoWeekHigh, currency)
+      value: formattedRange(value.fiftyTwoWeekLow, value.fiftyTwoWeekHigh, value)
     },
     {
       id: "volume",
@@ -1038,11 +1104,11 @@ function sanitizeQuote(rawQuote, fallbackSymbol, fetchedAt, maximumPoints) {
   }
 
   marketTime = firstTimestamp(quote, [
-    "updatedAt", "marketTime", "regularMarketTime", "timestamp"
+    "marketTime", "regularMarketTime", "timestamp", "updatedAt"
   ]);
   if (marketTime === null) {
     marketTime = firstTimestamp(meta, [
-      "updatedAt", "marketTime", "regularMarketTime", "timestamp"
+      "marketTime", "regularMarketTime", "timestamp", "updatedAt"
     ]);
   }
   range = normalizeRange(firstText(quote, ["range", "chartRange"], 16),
@@ -1067,6 +1133,8 @@ function sanitizeQuote(rawQuote, fallbackSymbol, fetchedAt, maximumPoints) {
     change: change,
     changePercent: changePercent,
     marketTime: marketTime === null ? null : isoTimestamp(marketTime),
+    regularSessionStart: isoTimestamp(quote.regularSessionStart),
+    regularSessionEnd: isoTimestamp(quote.regularSessionEnd),
     sparkline: sparkline,
     sparklineTimestamps: sparklineData.timestamps,
     range: range,
@@ -1347,7 +1415,9 @@ function changeAccessibilityLabel(changeOrQuote, percentValue, currencyValue) {
 
   label = direction === "up" ? "Up" : "Down";
   if (change !== null) {
-    label += " by " + formatMagnitude(change, currency, decimalPlacesForPrice(change));
+    label += " by " + (isIndexQuote(changeOrQuote)
+      ? formatQuotePrice(Math.abs(change), changeOrQuote)
+      : formatMagnitude(change, currency, decimalPlacesForPrice(change)));
   }
   if (percent !== null) {
     label += (change !== null ? ", " : " ") + unsignedPercent(percent);
@@ -1400,9 +1470,9 @@ function quoteAccessibilityLabel(quote, nowValue) {
   if (quote === null || typeof quote !== "object") return "Quote unavailable";
   name = safeText(quote.name || quote.displayName || quote.symbol, 120);
   if (name !== "") parts.push(name);
-  price = formatPrice(
+  price = formatQuotePrice(
     hasOwn(quote, "regularMarketPrice") ? quote.regularMarketPrice : quote.price,
-    quote.currency
+    quote
   );
   if (price !== MISSING_VALUE) parts.push(price);
   parts.push(changeAccessibilityLabel(quote));
@@ -1448,11 +1518,17 @@ if (typeof module !== "undefined" && module && module.exports) {
     formatPrice: formatPrice,
     formatCurrency: formatCurrency,
     formatDelta: formatDelta,
+    formatQuotePrice: formatQuotePrice,
+    formatQuoteDelta: formatQuoteDelta,
+    quoteUnitLabel: quoteUnitLabel,
     formatPercent: formatPercent,
     formatVolume: formatVolume,
     formatFreshness: formatFreshness,
     marketStateLabel: marketStateLabel,
     asOfLabel: asOfLabel,
+    quoteTimeLabel: quoteTimeLabel,
+    quoteSessionLabel: quoteSessionLabel,
+    quoteAgeStatus: quoteAgeStatus,
     statRows: statRows,
     timestampMilliseconds: timestampMilliseconds,
     downsampleSparkline: downsampleSparkline,

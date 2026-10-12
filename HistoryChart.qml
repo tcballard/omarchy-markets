@@ -14,8 +14,10 @@ FocusScope {
   property color foreground: Omarchy.Color.popups.text
   property string fontFamily: Style.font.family
   property string currency: ""
+  property string instrumentType: ""
   property string symbol: ""
   property string seriesKey: ""
+  property real plotHeight: Style.space(160)
   property int keyboardIndex: -1
   readonly property bool canInspect: plot.samples.length >= 2
   readonly property real pointerX: hover.point.position.x
@@ -24,9 +26,12 @@ FocusScope {
     : hover.hovered ? ChartModel.nearest(plot.samples, (pointerX - plot.inset) / plot.chartWidth) : -1
   readonly property var inspectedSample: inspectedIndex >= 0 ? plot.samples[inspectedIndex] : null
   readonly property string readoutText: inspectedSample
-    ? MarketModel.formatPrice(inspectedSample.value, currency) + " · " + ChartModel.timestampLabel(inspectedSample.time)
+    ? MarketModel.formatQuotePrice(inspectedSample.value,
+        {currency: currency, instrumentType: instrumentType, symbol: symbol})
+      + " · " + ChartModel.timestampLabel(inspectedSample.time)
     : "Hover for values or press I to inspect"
   signal returnFocus()
+  signal leaveView()
 
   implicitHeight: plot.height + Style.space(6) + readout.height
   height: implicitHeight
@@ -56,6 +61,7 @@ FocusScope {
 
   Keys.onPressed: function(event) {
     if (event.key === Qt.Key_Escape || event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab) {
+      if (event.key === Qt.Key_Escape) root.leaveView()
       finishInspection()
       event.accepted = true
     } else if (canInspect && (event.key === Qt.Key_Left || event.key === Qt.Key_Right
@@ -73,7 +79,7 @@ FocusScope {
     id: plot
     objectName: "historyPlot"
     width: parent.width
-    height: Style.space(160)
+    height: root.plotHeight
     clip: true
     onSamplesChanged: root.keyboardIndex = -1
 

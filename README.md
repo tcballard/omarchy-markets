@@ -10,6 +10,10 @@ Keep a watchlist moving across your Omarchy bar. Click to compare quotes,
 explore price history or pin the instrument you care about. Start with a
 profile and make it yours — no account or API key needed.
 
+**v0.5.0 is being prepared.** Named watchlists and chart inspection are on main;
+the latest published release is v0.4.0. See the [candidate test guide](docs/releases/v0.5.0-testing.md)
+and [v0.5.0 notes](docs/releases/v0.5.0.md) for scope and remaining acceptance.
+
 ![Omarchy Markets running on Omarchy with quotes and price history](preview.png)
 
 ## Install
@@ -33,7 +37,11 @@ points; the Meme Coins profile is labelled speculative.
 Keep up to eight named watchlists, with changes saved to the active list.
 Use **Manage** to create an empty list, save a copy, rename or delete it.
 Switch lists above the quotes, then choose saved order, gainers or losers.
-Your sort order and chart visibility are remembered after restarting the shell.
+The panel opens on a compact watchlist; longer lists use two columns. Open
+**Chart** for the selected instrument and **Watchlist** to return. Each view
+fits without scrolling. Your sort order is remembered after restarting the shell.
+Use all four arrow keys to select neighbouring quotes, Enter to open the chart
+and Escape to return. Selection stops at grid edges rather than wrapping.
 Hover over the chart to inspect a sampled price and timestamp, or press **I**
 and use the arrow keys. Escape returns to the watchlist controls.
 

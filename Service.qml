@@ -448,6 +448,7 @@ Item {
         var current = {}
         for (var freshKey in fresh) current[freshKey] = fresh[freshKey]
         current.stale = fresh.stale === true || fresh.cached === true
+          || MarketModel.quoteAgeStatus(fresh, Date.now(), refreshIntervalSec) === "stale"
         merged.push(current)
         continue
       }
@@ -463,6 +464,35 @@ Item {
       }
     }
     return merged
+  }
+
+  // Age existing data without another network request, including after resume.
+  // This only degrades freshness; a failed fetch cannot be cleared by a timer.
+  function expireQuoteAges() {
+    if (!pollingAllowed || quotes.length === 0) return
+    var changed = false
+    var next = []
+    var currentCount = 0
+    for (var i = 0; i < quotes.length; i++) {
+      var quote = quotes[i]
+      var stale = MarketModel.quoteAgeStatus(quote, Date.now(), refreshIntervalSec) === "stale"
+      if (stale && quote.stale !== true) {
+        var aged = {}
+        for (var key in quote) aged[key] = quote[key]
+        aged.stale = true
+        next.push(aged)
+        changed = true
+      } else next.push(quote)
+      if (!stale) currentCount += 1
+    }
+    if (!changed) return
+    quotes = next
+    if (state === "ready" || state === "partial") {
+      state = currentCount === 0 ? "stale" : "partial"
+      if (!lastError) lastError = "Some quotes are older than expected for their market session"
+    }
+    revision += 1
+    syncOneDayHistory()
   }
 
   function completePartialErrors(freshQuotes, providerErrors) {
@@ -606,14 +636,18 @@ Item {
       lastUpdated = isNaN(generated.getTime()) ? new Date() : generated
       var missingCount = Math.max(0, configuredSymbols.length - parsed.quotes.length)
       var liveCount = 0
+      var currentCount = 0
       for (var quoteIndex = 0; quoteIndex < parsed.quotes.length; quoteIndex++) {
         if (parsed.quotes[quoteIndex].stale !== true &&
             parsed.quotes[quoteIndex].cached !== true) liveCount += 1
+        if (MarketModel.quoteAgeStatus(parsed.quotes[quoteIndex], Date.now(), refreshIntervalSec) !== "stale")
+          currentCount += 1
       }
       var issueCount = Math.min(
         configuredSymbols.length,
         Math.max(missingCount, parsed.errors.length))
-      state = liveCount === 0 ? "stale" : (issueCount > 0 ? "partial" : "ready")
+      var agedCount = liveCount - currentCount
+      state = currentCount === 0 ? "stale" : (issueCount > 0 || agedCount > 0 ? "partial" : "ready")
       consecutiveFailures = ServiceLifecycle.nextFailureCount(
         consecutiveFailures,
         configuredSymbols.length,
@@ -621,7 +655,7 @@ Item {
         parsed.errors.length)
       lastError = issueCount > 0
         ? issueCount + (issueCount === 1 ? " symbol could not be updated" : " symbols could not be updated")
-        : ""
+        : agedCount > 0 ? "Some quotes are older than expected for their market session" : ""
     } else {
       failRequest(parsed.errors.length > 0
         ? parsed.errors[0].message
@@ -1013,6 +1047,13 @@ Item {
     repeat: true
     running: root.pollingAllowed
     onTriggered: root.refresh("timer")
+  }
+
+  Timer {
+    interval: 30000
+    repeat: true
+    running: root.pollingAllowed && root.quotes.length > 0
+    onTriggered: root.expireQuoteAges()
   }
 
   Timer {

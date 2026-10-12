@@ -150,7 +150,8 @@ assert.equal(restarted.settings.symbols, savedOrder, "sorting does not rewrite c
 
 const panel = {
   symbols, quotes, sortMode: "gainers", selectedSymbol: "ACME", primarySymbol: "ACME",
-  setupRequired: false, managing: false, keyboardCursor: false,
+  setupRequired: false, managing: false, managerSection: "symbols", displayingDetails: false, keyboardCursor: false,
+  watchlist: {columns: 1}, managerGrid: {columns: 1},
   Qt: {callLater() {}}, requestFocusedHistory() {},
 };
 Object.defineProperties(panel, {
@@ -158,8 +159,8 @@ Object.defineProperties(panel, {
   selectedIndex: {get() { return panel.symbols.indexOf(panel.focusedSymbol); }},
   displaySymbols: {get() { return model.sortSymbols(panel.symbols, panel.quotes, panel.sortMode); }},
 });
-methods(read("Panel.qml"), ["moveSelection", "inspectSymbol", "pinFocused", "removeManagedSymbol"], panel);
-panel.moveSelection(1);
+methods(read("Panel.qml"), ["gridNeighbour", "moveCursor", "inspectSymbol", "pinFocused", "removeManagedSymbol"], panel);
+panel.moveCursor(0, 1);
 assert.equal(panel.focusedSymbol, "LUMA", "keyboard moves through displayed ranking");
 panel.quotes = [{symbol: "NORTH", changePercent: 20}, {symbol: "LUMA", changePercent: -8}];
 assert.equal(panel.focusedSymbol, "LUMA", "refreshing rankings keeps selection on the same symbol");
@@ -168,7 +169,7 @@ panel.hostWidget = {setPrimarySymbol(symbol) { pinned = symbol; }};
 panel.pinFocused();
 assert.equal(pinned, "LUMA", "pin acts on the inspected instrument after reordering");
 panel.managing = true;
-panel.moveSelection(-1);
+panel.moveCursor(0, -1);
 assert.equal(panel.focusedSymbol, "NORTH", "manager navigation uses saved order");
 panel.hostWidget.removeSymbol = symbol => {
   const result = market.removeSymbol(panel.symbols, symbol);

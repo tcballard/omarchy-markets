@@ -21,10 +21,20 @@
   aligned column, and range controls inside the selected-instrument detail.
   The chart baseline and return both use the first plotted price; quote changes
   explicitly compare against previous close. The provider footer has reserved
-  space outside the scrolling viewport. Profiles remain setup and management concerns.
+  space beneath the current view. The popup grows naturally up to 560
+  scaled pixels or three quarters of the host's available card height, whichever
+  is smaller. The watchlist and chart are separate views; more than six symbols
+  use two columns. A plain Item replaces the scroll container. Management has
+  Symbols, Watchlists and Preferences views; setup profiles use a two-column
+  grid. Opening always returns to the watchlist. Every visible view must fit,
+  including footer and host insets, rather than hiding overflow behind a scrollbar.
 - Chart inspection: pointer hover selects the nearest plotted sample. A separate
   focus scope entered with I or Inspect chart owns Left/Right, Home/End and
-  Escape/Tab; ordinary panel arrows retain range selection. Painting and hit
+  Escape returns to the watchlist and Tab returns to panel navigation. Ordinary
+  arrows select spatial neighbours in the visible watchlist, setup or symbol
+  manager grid, with no wrapping at edges. They never change ranges or open
+  another view. Enter explicitly opens the selected chart; range buttons choose
+  timeframes. Painting and hit
   testing share filtered price/time pairs and coordinates. The readout labels
   UTC and missing times explicitly, keeps a fixed height, and leaves the live
   quote unchanged. It uses existing history without a new provider request;
@@ -48,7 +58,7 @@
   delete preserve other lists; deletion requires confirmation and retains at
   least one list; multiple monitors receive the host's updated inline settings;
   keyboard and pointer actions work; sorting preserves the inspected symbol;
-  restart restores the active list, sorting and chart visibility. Portable
+  restart restores the active list and sorting; opening shows the watchlist. Portable
   transition tests establish state behavior; live QML input/layout and host
   propagation remain separate checks in `docs/acceptance.md`.
 - Process-wide state: one singleton owns quote polling, last-good merging,
@@ -87,6 +97,20 @@
 - User-visible states: setup, disabled, waiting, loading, ready, partial,
   stale/cached, market closed, offline/timeout, dependency missing, malformed
   response, empty, and failed. Missing values render as an em dash.
+- Quote correctness: index values use points while the provider's currency
+  metadata is retained. Tiny nonzero prices keep at least four significant
+  digits, with bounded scientific notation for extreme magnitudes. Fetch time
+  is labelled separately from quote time, which stays available with details
+  collapsed. Regular-session prices are never labelled as extended-hours prices.
+- Quote-age policy: active/continuous quotes older than the greater of 30
+  minutes or twice the configured refresh interval are stale. This conservative
+  threshold is not an exchange-delay guarantee. Completed regular-session
+  bounds, when supplied, let closing quotes remain valid over weekends/holidays.
+  The first threshold window after the open permits waiting for a new quote.
+  Closed/pre/post sessions without completed bounds retain their explicit quote
+  age; missing or future timestamps remain unknown. No exchange calendar or
+  exact feed delay is inferred. The UI says quotes may be delayed. A 30-second
+  local age check never requests data and cannot recover a failed fetch.
 - Accessibility: every action has a keyboard path and accessible name; signed
   arrows/text accompany color; ticker motion is optional, pausable, horizontal
   only, and never the sole source of information.

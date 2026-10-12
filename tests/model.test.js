@@ -237,6 +237,64 @@ test("formats prices with useful precision, grouping, and currency", () => {
   assert.equal(model.formatCurrency(8, "EUR"), "€8.00");
 });
 
+test("tiny nonzero prices and changes retain significant digits", () => {
+  assert.equal(model.formatPrice(0.000000123, "USD"), "$0.0000001230");
+  assert.equal(model.formatPrice(-0.000000123, "USD"), "−$0.0000001230");
+  assert.equal(model.formatDelta(1e-30, "USD"), "+$1.000e-30");
+  assert.equal(model.formatPrice(Number.MIN_VALUE, "USD"), "$4.941e-324");
+  assert.equal(model.formatPrice(1e21, "USD"), "$1e+21");
+  assert.equal(model.formatPrice(0, "USD"), "$0.00");
+});
+
+test("indices use points in prices, deltas, stats and accessibility", () => {
+  const index = {symbol: "^EXAMPLE", instrumentType: "INDEX", currency: "USD",
+    regularMarketPrice: 6000, change: 5, changePercent: 0.08, regularMarketOpen: 5995};
+  assert.equal(model.formatQuotePrice(6000, index), "6,000.00 pts");
+  assert.equal(model.formatQuoteDelta(-5, index), "−5.00 pts");
+  assert.equal(model.formatQuotePrice(null, index), "—");
+  assert.equal(model.quoteUnitLabel(index), "Index points");
+  assert.equal(model.statRows(index)[0].value, "5,995.00 pts");
+  assert.match(model.quoteAccessibilityLabel(index), /6,000.00 pts, Up by 5.00 pts/);
+  assert.equal(model.formatQuotePrice(123.45, {currency: "GBp"}), "123.45p");
+  assert.equal(model.formatQuotePrice(6000, {symbol: "^EXAMPLE", currency: "USD"}), "6,000.00 pts");
+  assert.equal(model.formatQuotePrice(6000, {...index, instrumentType: "ETF"}), "$6,000.00");
+});
+
+test("quote age distinguishes active trading from the last completed session", () => {
+  const monday = Date.parse("2026-10-12T15:00:00Z");
+  const friday = {sessionState: "closed", marketTime: "2026-10-09T20:00:00Z",
+    regularSessionStart: "2026-10-09T13:30:00Z", regularSessionEnd: "2026-10-09T20:00:00Z"};
+  assert.equal(model.quoteAgeStatus(friday, monday, 900), "closed");
+  assert.equal(model.quoteAgeStatus({...friday, marketTime: "2026-10-08T20:00:00Z"}, monday, 900), "stale");
+  const open = {...friday, sessionState: "regular", regularSessionStart: "2026-10-12T13:30:00Z",
+    regularSessionEnd: "2026-10-12T20:00:00Z"};
+  assert.equal(model.quoteAgeStatus(open, monday, 900), "stale");
+  assert.equal(model.quoteAgeStatus(open, Date.parse("2026-10-12T13:35:00Z"), 900), "awaiting");
+  assert.equal(model.quoteAgeStatus({...open, marketTime: "2026-10-12T14:40:00Z"}, monday, 900), "current");
+  assert.equal(model.quoteAgeStatus({...open, marketTime: "2026-10-12T14:20:00Z"}, monday, 900), "stale");
+  assert.equal(model.quoteAgeStatus({...open, marketTime: "2026-10-12T14:20:00Z"}, monday, 3600), "current");
+  assert.equal(model.quoteAgeStatus({...friday, instrumentType: "CRYPTOCURRENCY", sessionState: "continuous"}, monday, 900), "stale");
+  assert.equal(model.quoteAgeStatus({...friday, sessionState: "pre", regularSessionStart: "2026-10-13T13:30:00Z",
+    regularSessionEnd: "2026-10-13T20:00:00Z"}, monday, 900), "closed");
+  assert.equal(model.quoteAgeStatus({...friday, cached: true}, monday, 900), "stale");
+  assert.equal(model.quoteAgeStatus({sessionState: "regular"}, monday, 900), "unknown");
+  assert.equal(model.quoteAgeStatus({sessionState: "regular", marketTime: "2026-10-13T15:00:00Z"}, monday, 900), "unknown");
+});
+
+test("quote timestamps and session labels never imply extended-hours prices", () => {
+  const now = Date.parse("2026-10-12T21:00:00Z");
+  const quote = {marketTime: "2026-10-12T20:00:00Z", sessionState: "post"};
+  assert.equal(model.quoteSessionLabel(quote), "Regular-session quote");
+  assert.equal(model.marketStateLabel(quote), "After hours");
+  assert.equal(model.quoteTimeLabel(quote, now), "As of 1 hour ago");
+  assert.equal(model.quoteSessionLabel({instrumentType: "CRYPTOCURRENCY"}), "24-hour market quote");
+  assert.equal(model.quoteTimeLabel({}, now), "Quote time unavailable");
+  assert.equal(model.quoteTimeLabel({marketTime: "2026-10-13T00:00:00Z"}, now), "Quote time ahead of local clock");
+  const normalized = model.sanitizeQuote({...quote, symbol: "ACME", regularMarketPrice: 10,
+    updatedAt: "2026-10-12T21:00:00Z"});
+  assert.equal(normalized.marketTime, "2026-10-12T20:00:00.000Z");
+});
+
 test("does not turn missing or malformed prices into zero", () => {
   [null, undefined, true, false, "", "   ", "12x", NaN, Infinity, {}, []]
     .forEach((value) => assert.equal(model.formatPrice(value, "USD"), "—"));
@@ -334,13 +392,16 @@ test("sanitizes a valid helper document to the stable quote schema", () => {
   assert.equal(result.generatedAt, "2026-08-31T12:01:00.000Z");
   assert.deepEqual(Object.keys(result.quotes[0]), [
     "symbol", "name", "currency", "regularMarketPrice", "previousClose",
-    "change", "changePercent", "marketTime", "sparkline", "sparklineTimestamps",
+    "change", "changePercent", "marketTime", "regularSessionStart", "regularSessionEnd",
+    "sparkline", "sparklineTimestamps",
     "range", "exchange", "exchangeTimezone", "instrumentType", "marketState",
     "sessionState", "regularMarketOpen", "dayLow", "dayHigh", "fiftyTwoWeekLow",
     "fiftyTwoWeekHigh", "volume", "cached", "cacheAgeSec", "stale"
   ]);
   assert.deepEqual(result.quotes[0], quote({
     marketTime: "2026-08-31T12:00:00.000Z",
+    regularSessionStart: null,
+    regularSessionEnd: null,
     sparklineTimestamps: [],
     range: "1d",
     exchange: null,
