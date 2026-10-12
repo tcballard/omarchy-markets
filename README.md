@@ -10,6 +10,10 @@ Keep a watchlist moving across your Omarchy bar. Click to compare quotes,
 explore price history or pin the instrument you care about. Start with a
 profile and make it yours — no account or API key needed.
 
+**v0.5.0 is being prepared.** Named watchlists and chart inspection are on main;
+the latest published release is v0.4.0. See the [candidate test guide](docs/releases/v0.5.0-testing.md)
+and [v0.5.0 notes](docs/releases/v0.5.0.md) for scope and remaining acceptance.
+
 ![Omarchy Markets running on Omarchy with quotes and price history](preview.png)
 
 ## Install

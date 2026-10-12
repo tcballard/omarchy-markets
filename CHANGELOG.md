@@ -1,12 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 — prepared, not yet released
 
 - Inspect loaded chart points with a pointer or keyboard, showing the sampled
   price and UTC timestamp. I enters inspection; Left/Right, Home/End and Escape
   navigate without changing the chart range or current quote.
 - Add an offscreen Qt Quick smoke job that loads the shipped UI against small
   host stubs and exercises pointer/key input, focus and settings bindings.
+- Run the same smoke suite in a separate, version-checked Qt 6.12.0 CI job.
 - Accept Qt-wrapped arrays when restoring named lists and chart data; avoid
   pausing a stopped ticker and plotting a missing previous close as zero.
 - Qualify Omarchy's theme colors to avoid collisions with Qt's Color type,
